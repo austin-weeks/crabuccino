@@ -36,17 +36,19 @@
     "test": "vitest",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
+    "local-ci": "pnpm run typecheck && pnpm run lint && prettier --check . && pnpm run build && pnpm run test",
     "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.4.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "eslint": "^10.9.1",
     "globals": "^17.11.0",
     "jiti": "^2.7.0",
+    "prettier": "^3.9.6",
     "tsdown": "^0.22.14",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "@typescript/native": "npm:typescript@^7.0.2",
     "typescript-eslint": "^8.68.0",
     "vitest": "^4.1.11"
   },
