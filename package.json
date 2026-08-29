@@ -1,0 +1,60 @@
+{
+  "name": "crabuccino",
+  "version": "0.0.0",
+  "description": "Idiomatic port of Rust's Result and Option types.",
+  "author": {
+    "name": "Austin Weeks",
+    "url": "https://github.com/austin-weeks"
+  },
+  "keywords": [
+    "errors",
+    "result",
+    "option",
+    "rust"
+  ],
+  "license": "MPL-2.0",
+  "homepage": "https://github.com/austin-weeks/crabuccino",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/austin-weeks/crabuccino.git"
+  },
+  "bugs": {
+    "url": "https://github.com/austin-weeks/crabuccino/issues"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "lint": "eslint",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.4.0",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
+    "jiti": "^2.7.0",
+    "tsdown": "^0.22.14",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^4.1.11"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.5.2",
+      "onFail": "download"
+    }
+  }
+}
