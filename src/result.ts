@@ -37,7 +37,7 @@ interface IResult<T, E> {
   /**
    * Returns `true` if the result is an `Err`.
    *
-   * When this method returns `true`, _TypeScript_ narrows the type from `Result<T, E>` to `Err<E>`, allowing access to the `Err<E>.inner()` method to retrieve the containe error value.
+   * When this method returns `true`, _TypeScript_ narrows the type from `Result<T, E>` to `Err<E>`, allowing access to the `Err<E>.inner()` method to retrieve the contained error value.
    *
    * When this method returns `false`, _TypeScript_ narrows the type from `Result<T, E>` to `Ok<T>`.
    *
@@ -154,7 +154,7 @@ interface IResult<T, E> {
   /**
    * Returns the contained success value, but never panics.
    *
-   * This method is only available for results with an `E` type of `never`.
+   * This method can only be called on results with an `E` type of `never`.
    *
    * Unlike `unwrap`, this method is known to never panic, therefore it can be used instead of `unwrap` as a maintainability safeguard that will fail to compile if the error type of the result is later changed to an error that can actually occur.
    */
@@ -163,35 +163,35 @@ interface IResult<T, E> {
   /**
    * Returns the contained failure value, but never panics.
    *
-   * This method is only available for results with a `T` type of `never`.
+   * This method can only be called on results with a `T` type of `never`.
    *
    * Unlike `unwrapErr`, this method is known to never panic, therefore it can be used instead of `unwrapErr` as a maintainability safeguard that will fail to compile if the ok type of the result is later changed to a type that can actually occur.
    */
   intoErr(this: Result<never, E>): E;
 
   /**
-   * Returns `res` if the result is `Ok`, otherwise returns the `Err` value of self.
+   * Returns `res` if the result is `Ok`, otherwise returns the `Err` value self.
    *
    * Arguments passed to `and` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `andThen`, which is lazily evaluated.
    */
   and<U>(res: Result<U, E>): Result<U, E>;
 
   /**
-   * Returns the result of calling function `f` if the result is `Ok`, otherwise returns the `Err` value of self.
+   * Returns the result of calling function `f` if the result is `Ok`, otherwise returns the `Err` value self.
    *
    * This function can be used for control flow based on result values.
    */
   andThen<U, F = E>(f: (ok: T) => Result<U, F>): Result<U, E | F>;
 
   /**
-   * Returns `res` if the result is `Err`, otherwise returns the `Ok` value of self.
+   * Returns `res` if the result is `Err`, otherwise returns the `Ok` value self.
    *
    * Arguments passed to `or` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `orElse`, which is lazily evaluated.
    */
   or<F>(res: Result<T, F>): Result<T, F>;
 
   /**
-   * Returns the result of calling function `f` if the result is `Err`, otherwise returns the `Ok` value of self.
+   * Returns the result of calling function `f` if the result is `Err`, otherwise returns the `Ok` value self.
    *
    * This function can be used for control flow based on result values.
    */
@@ -308,7 +308,7 @@ export class Ok<T, E> implements IResult<T, E> {
   }
   mapErr<F>(_f: (err: E) => F): Ok<T, F> {
     // @ts-expect-error - the error type is irrelevant for Ok
-    return this as Result<T, F>;
+    return this as Ok<T, F>;
   }
   inspect(f: (ok: T) => void): Ok<T, E> {
     f(this.value);
@@ -352,7 +352,7 @@ export class Ok<T, E> implements IResult<T, E> {
     // @ts-expect-error - error type is irrelevant to Ok
     return this as Ok<T, F>;
   }
-  orElse<F, U = T>(_f: (err: E) => Result<U, F>): Ok<T | U, F> {
+  orElse<F, U = T>(_f: (err: E) => Result<U, F>): Ok<T, F> {
     // @ts-expect-error - error type is irrelevant to Ok
     return this as Ok<T, F>;
   }
@@ -477,9 +477,9 @@ export class Err<T, E> implements IResult<T, E> {
     // @ts-expect-error - the okay type is irrelevant to Err
     return this as Err<U, E>;
   }
-  andThen<U, F = E>(_f: (ok: T) => Result<U, F>): Err<U, E | F> {
-    // @ts-expect-error - okay type is irrelevant and 'E' is assignable to 'E | F'
-    return this as Err<U, E | F>;
+  andThen<U, F = E>(_f: (ok: T) => Result<U, F>): Err<U, E> {
+    // @ts-expect-error - okay type is irrelevant for Err
+    return this as Err<U, E>;
   }
   or<F>(res: Result<T, F>): Result<T, F> {
     return res;

@@ -226,21 +226,6 @@ interface IOption<T> {
 export class Some<T> implements IOption<T> {
   /** Creates a `Some(T)` variant of `Option<T>`. */
   constructor(private readonly value: T) {}
-
-  /**
-   * Get the value contained within this `Some`.
-   *
-   * @example
-   * ```
-   * if (opt.isSome()) {
-   *   doSomethingWith(opt.inner());
-   * }
-   * ```
-   */
-  inner(): T {
-    return this.value;
-  }
-
   toString(): string {
     return `Some(${stringify(this.value)})`;
   }
@@ -255,6 +240,19 @@ export class Some<T> implements IOption<T> {
     return this.toString();
   }
 
+  /**
+   * Get the value contained within this `Some`.
+   *
+   * @example
+   * ```
+   * if (opt.isSome()) {
+   *   doSomethingWith(opt.inner());
+   * }
+   * ```
+   */
+  inner(): T {
+    return this.value;
+  }
   toNullish(): T {
     return this.value;
   }
@@ -339,7 +337,7 @@ export class Some<T> implements IOption<T> {
     if (this.value.isOk()) {
       return new Ok(new Some(this.value.inner()));
     }
-    return new Err(this.value.inner());
+    return this.value as Err<Some<T>, E>;
   }
   flatten<T>(this: Some<Option<T>>): Option<T> {
     return this.value;

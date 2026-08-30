@@ -54,7 +54,8 @@ describe("Option", () => {
 
     describe("inner", () => {
       it("should return the contained value", () => {
-        expect(new Some("val").inner()).toEqual("val");
+        const inner = {};
+        expect(new Some(inner).inner()).toBe(inner);
       });
     });
 
