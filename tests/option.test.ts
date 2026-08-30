@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { None, Some, Option, fromNullish, some, none } from "../src/option";
+import {
+  None,
+  Some,
+  Option,
+  fromNullish,
+  some,
+  none,
+  inspectSymbol,
+} from "../src/option";
 import { Err, Ok, Result } from "../src/result";
 import { ExpectationFailed, Panic } from "../src/panic";
 import { captureThrown } from "./utils";
@@ -44,11 +52,33 @@ describe("Option", () => {
       });
     });
 
+    describe("inner", () => {
+      it("should return the contained value", () => {
+        expect(new Some("val").inner()).toEqual("val");
+      });
+    });
+
+    describe("match", () => {
+      it("should call the some callback with the contained value and return the result", () => {
+        expect(
+          new Some(5).match(
+            v => v * 2,
+            () => {},
+          ),
+        ).toEqual(10);
+      });
+      it("should not execute the none callback", () => {
+        const cb = vi.fn();
+        new Some("").match(() => {}, cb);
+        expect(cb).not.toHaveBeenCalled();
+      });
+    });
+
     describe("isSome", () => {
       it("should be true", () => {
         const some = new Some("val");
         expect(some.isSome()).toBe(true);
-        expect(some.value).toEqual("val");
+        expect(some.inner()).toEqual("val");
       });
     });
 
@@ -125,7 +155,7 @@ describe("Option", () => {
       it("should map the contained value", () => {
         const mapped = new Some("hello").map(v => v + " world");
         expect(mapped).toBeInstanceOf(Some);
-        expect(mapped.value).toEqual("hello world");
+        expect(mapped.inner()).toEqual("hello world");
       });
     });
 
@@ -167,7 +197,7 @@ describe("Option", () => {
       it("should return Ok(T)", () => {
         const ok = new Some("val").okOr(new Error());
         expect(ok).toBeInstanceOf(Ok);
-        expect(ok.value).toEqual("val");
+        expect(ok.inner()).toEqual("val");
       });
     });
 
@@ -175,7 +205,7 @@ describe("Option", () => {
       it("should return Ok(T)", () => {
         const ok = new Some("val").okOrElse(() => new Error());
         expect(ok).toBeInstanceOf(Ok);
-        expect(ok.value).toEqual("val");
+        expect(ok.inner()).toEqual("val");
       });
       it("should not call the err function", () => {
         const err = vi.fn();
@@ -253,8 +283,8 @@ describe("Option", () => {
     describe("unzip", () => {
       it("should return [Option(A), Option(B)]", () => {
         const [a, b] = new Some<[string, string]>(["a", "b"]).unzip();
-        expect(a.value).toEqual("a");
-        expect(b.value).toEqual("b");
+        expect(a.inner()).toEqual("a");
+        expect(b.inner()).toEqual("b");
       });
     });
 
@@ -278,12 +308,50 @@ describe("Option", () => {
         expect(new Some(inner).flatten()).toBe(inner);
       });
     });
+
+    describe("toString", () => {
+      it("should return a string representation of Some(T)", () => {
+        expect(new Some("value").toString()).toEqual("Some(value)");
+      });
+    });
+
+    describe("toJSON", () => {
+      it("should serialize the Some", () => {
+        expect(new Some("value").toJSON()).toEqual({
+          OptionVariant: "Some",
+          inner: "value",
+        });
+      });
+    });
+
+    describe("inspect symbol", () => {
+      it("should delegate to toString", () => {
+        const some = new Some("value");
+        expect(some[inspectSymbol]()).toEqual(some.toString());
+      });
+    });
   });
 
   describe("None", () => {
     describe("toNullish", () => {
       it("should return undefined", () => {
         expect(new None().toNullish()).toBeUndefined();
+      });
+    });
+
+    describe("match", () => {
+      it("should call the none callback and return the result", () => {
+        expect(
+          new None().match(
+            () => {},
+            () => "none",
+          ),
+        ).toEqual("none");
+      });
+      it("should not execute the some callback", () => {
+        const cb = vi.fn();
+        new None().match(cb, () => {});
+        expect(cb).not.toHaveBeenCalled();
       });
     });
 
@@ -326,7 +394,7 @@ describe("Option", () => {
         const none = new None();
         const e: ExpectationFailed = captureThrown(() => none.expect("custom message"));
         expect(e).toBeInstanceOf(ExpectationFailed);
-        expect(e.underlyingValue).toEqual(none);
+        expect(e.underlyingValue).toBe(none);
         expect(e.message).toEqual("custom message: expected 'Some', got 'None'");
       });
     });
@@ -407,7 +475,7 @@ describe("Option", () => {
         const inner = new Error();
         const err = new None().okOr(inner);
         expect(err).toBeInstanceOf(Err);
-        expect(err.error).toBe(inner);
+        expect(err.inner()).toBe(inner);
       });
     });
 
@@ -416,7 +484,7 @@ describe("Option", () => {
         const inner = new Error();
         const err = new None().okOrElse(() => inner);
         expect(err).toBeInstanceOf(Err);
-        expect(err.error).toBe(inner);
+        expect(err.inner()).toBe(inner);
       });
     });
 
@@ -496,6 +564,27 @@ describe("Option", () => {
       it("should return self", () => {
         const none = new None<Option<unknown>>();
         expect(none.flatten()).toBe(none);
+      });
+    });
+
+    describe("toString", () => {
+      it("should return a string representation of None", () => {
+        expect(new None().toString()).toEqual("None");
+      });
+    });
+
+    describe("toJSON", () => {
+      it("should serialize the None", () => {
+        expect(new None().toJSON()).toEqual({
+          OptionVariant: "None",
+        });
+      });
+    });
+
+    describe("inspect symbol", () => {
+      it("should delegate to toString", () => {
+        const none = new None();
+        expect(none[inspectSymbol]()).toEqual(none.toString());
       });
     });
   });

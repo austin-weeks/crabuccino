@@ -1,5 +1,9 @@
 import { Err, Ok, type Result } from "./result";
 import { ExpectationFailed, Panic } from "./panic";
+import { stringify } from "./stringify";
+
+// Node/Vitest will try to call '.inspect()' - override it
+export const inspectSymbol = Symbol.for("nodejs.util.inspect.custom");
 
 /**
  * Construct an `Option<T>` from a value of type `T` that may be `null` or `undefined`.
@@ -25,9 +29,46 @@ interface IOption<T> {
   toNullish(): T | undefined;
 
   /**
+   * Match on each variant of `Option`.
+   *
+   * Unlike _Rust_, your match branches may return different types, though it is generally recommended to return the same type.
+   *
+   * @example
+   * ```
+   * import { Some, None } from "crabuccino";
+   *
+   * const doubled = new Some(5).match(
+   *   (v) => v * 2, // the option is 'Some', so the some branch runs
+   *   () => 0,
+   * );
+   * console.assert(doubled === 10);
+   *
+   * const tripled = new None().match(
+   *   (v) => v * 3,
+   *   () => 0,      // the option is 'None', so the none branch runs
+   * );
+   * console.assert(tripled === 0);
+   * ```
+   */
+  match<A, B = A>(some: (val: T) => A, none: () => B): A | B;
+
+  /**
    * Returns `true` if the option is a `Some` value.
    *
-   * When this method returns `true`, _TypeScript_ can narrow the type from `Option<T>` to `Some<T>`, allowing safe access to the `Some<T>.value` property.
+   * When this method returns `true`, _TypeScript_ narrows the type from `Option<T>` to `Some<T>`, allowing access to the `Some<T>.inner()` method to retrieve the contained value.
+   *
+   * When this method returns `false`, _TypeScript_ narrows the type from `Option<T>` to `None`.
+   *
+   * @example
+   * ```
+   * import { Some, type Option } from "crabuccino";
+   *
+   * const opt: Option<string> = new Some("hello");
+   *
+   * if (opt.isSome()) {
+   *   console.assert(opt.inner() === "hello");
+   * }
+   * ```
    */
   isSome(): this is Some<T>;
 
@@ -39,7 +80,9 @@ interface IOption<T> {
   /**
    * Returns `true` if the option is a `None` value.
    *
-   * When this method returns `true`, _TypeScript_ can narrow the type from `Option<T>` to `None`, indicating there is no `value` property.
+   * When this method returns `true`, _TypeScript_ narrows the type from `Option<T>` to `None`, indicating there is no contained value.
+   *
+   * When this method returns `false`, _TypeScript_ narrows the type from `Option<T>` to `Some<T>`.
    */
   isNone(): this is None<T>;
 
@@ -51,14 +94,14 @@ interface IOption<T> {
   /**
    * Returns the contained value if `Some`.
    *
-   * Throws an `ExpectationFailed` exception if the value is `None` with a custom message provided by `msg`.
+   * Throws an `ExpectationFailed` exception if the option is `None` with a custom message `msg`.
    */
   expect(msg: string): T;
 
   /**
    * Returns the contained value if `Some`.
    *
-   * Throws a `Panic` exception if the value is `None`.
+   * Throws a `Panic` exception if the option is `None`.
    *
    * Because this function may panic, its use is generally discouraged. Panics are meant for unrecoverable errors.
    * Instead, prefer to handle the `None` case explicitly, or call `unwrapOr` or `unwrapOrElse`.
@@ -182,11 +225,43 @@ interface IOption<T> {
  */
 export class Some<T> implements IOption<T> {
   /** Creates a `Some(T)` variant of `Option<T>`. */
-  constructor(readonly value: T) {}
+  constructor(private readonly value: T) {}
+
+  /**
+   * Get the value contained within this `Some`.
+   *
+   * @example
+   * ```
+   * if (opt.isSome()) {
+   *   doSomethingWith(opt.inner());
+   * }
+   * ```
+   */
+  inner(): T {
+    return this.value;
+  }
+
+  toString(): string {
+    return `Some(${stringify(this.value)})`;
+  }
+  toJSON() {
+    return {
+      OptionVariant: "Some",
+      inner: this.value,
+    };
+  }
+  // Node/Vitest will try to call '.inspect()' - override it
+  [inspectSymbol]() {
+    return this.toString();
+  }
 
   toNullish(): T {
     return this.value;
   }
+  match<A, B = A>(some: (val: T) => A, _none: () => B): A | B {
+    return some(this.value);
+  }
+
   isSome(): this is Some<T> {
     return true;
   }
@@ -262,9 +337,9 @@ export class Some<T> implements IOption<T> {
   }
   transpose<T, E>(this: Some<Result<T, E>>): Result<Some<T>, E> {
     if (this.value.isOk()) {
-      return new Ok(new Some(this.value.value));
+      return new Ok(new Some(this.value.inner()));
     }
-    return new Err(this.value.error);
+    return new Err(this.value.inner());
   }
   flatten<T>(this: Some<Option<T>>): Option<T> {
     return this.value;
@@ -280,8 +355,24 @@ export class None<T> implements IOption<T> {
   // TODO: re-use a singleton to avoid allocations
   /** Creates a `None` variant of `Option<T>`. */
   constructor() {}
+  toString(): string {
+    return "None";
+  }
+  toJSON() {
+    return {
+      OptionVariant: "None",
+    };
+  }
+  // Node/Vitest will try to call '.inspect()' - override it
+  [inspectSymbol]() {
+    return this.toString();
+  }
 
   toNullish(): undefined {}
+  match<A, B = A>(_some: (val: T) => A, none: () => B): A | B {
+    return none();
+  }
+
   isSome(): this is Some<T> {
     return false;
   }

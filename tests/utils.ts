@@ -1,3 +1,4 @@
+/* v8 ignore file */
 class UnmetThrowExpectation extends Error {}
 
 export function captureThrown<E>(f: () => void): E {
