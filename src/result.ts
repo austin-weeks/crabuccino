@@ -85,7 +85,7 @@ interface IResult<T, E> {
    *
    * Arguments passed to `mapOr` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `mapOrElse`, which is lazily evaluated.
    */
-  mapOr<U>(def: U, f: (val: T) => U): U;
+  mapOr<U>(def: U, f: (ok: T) => U): U;
 
   /**
    * Maps a `Result<T, E>` to `U` by applying fallback function `def` to a contained `Err` value, or function `f` to a contained `Ok` value.
@@ -244,9 +244,16 @@ interface IResult<T, E> {
   flatten<T>(this: Result<Result<T, E>, E>): Result<T, E>;
 }
 
+/**
+ * Represents a value that is either a success `Ok(T)` or a failure `Err(E)`.
+ */
 export type Result<T, E> = Ok<T, E> | Err<T, E>;
 
+/**
+ * The `Ok(T)` variant of `Result<T, E>`.
+ */
 export class Ok<T, E> implements IResult<T, E> {
+  /** Creates an `Ok(T)` variant of `Result<T, E>`. */
   constructor(private readonly value: T) {}
   toString() {
     return `Ok(${stringify(this.value)})`;
@@ -300,7 +307,7 @@ export class Ok<T, E> implements IResult<T, E> {
   map<U>(f: (ok: T) => U): Ok<U, E> {
     return new Ok(f(this.value));
   }
-  mapOr<U>(_def: U, f: (val: T) => U): U {
+  mapOr<U>(_def: U, f: (ok: T) => U): U {
     return f(this.value);
   }
   mapOrElse<U>(_def: (err: E) => U, f: (ok: T) => U): U {
@@ -365,18 +372,23 @@ export class Ok<T, E> implements IResult<T, E> {
   match<A, B = A>(ok: (t: T) => A, _err: (e: E) => B): A | B {
     return ok(this.value);
   }
-  transpose<T>(this: Ok<Option<T>, E>): Option<Ok<T, E>> {
-    if (this.value.isSome()) {
-      return new Some(new Ok(this.value.inner()));
+  transpose<T>(this: Result<Option<T>, E>): Option<Ok<T, E>> {
+    const self = this as Ok<Option<T>, E>;
+    if (self.value.isSome()) {
+      return new Some(new Ok(self.value.inner()));
     }
     return new None();
   }
-  flatten<T>(this: Ok<Result<T, E>, E>): Result<T, E> {
-    return this.value;
+  flatten<T>(this: Result<Result<T, E>, E>): Result<T, E> {
+    return (this as Ok<Result<T, E>, E>).value;
   }
 }
 
+/**
+ * The `Err(T)` variant of `Result<T, E>`.
+ */
 export class Err<T, E> implements IResult<T, E> {
+  /** Creates an `Err(E)` variant of `Result<T, E>`. */
   constructor(private readonly error: E) {}
   toString() {
     return `Err(${stringify(this.error)})`;
@@ -431,7 +443,7 @@ export class Err<T, E> implements IResult<T, E> {
     // @ts-expect-error - the okay type is irrelevant to Err
     return this as Err<U, E>;
   }
-  mapOr<U>(def: U, _f: (val: T) => U): U {
+  mapOr<U>(def: U, _f: (ok: T) => U): U {
     return def;
   }
   mapOrElse<U>(def: (err: E) => U, _f: (ok: T) => U): U {
@@ -496,10 +508,10 @@ export class Err<T, E> implements IResult<T, E> {
   match<A, B = A>(_ok: (t: T) => A, err: (e: E) => B): A | B {
     return err(this.error);
   }
-  transpose<T>(this: Err<Option<T>, E>): Some<Err<T, E>> {
+  transpose<T>(this: Result<Option<T>, E>): Some<Err<T, E>> {
     return new Some(this as Err<T, E>);
   }
-  flatten<T>(this: Err<Result<T, E>, E>): Err<T, E> {
+  flatten<T>(this: Result<Result<T, E>, E>): Err<T, E> {
     return this as Err<T, E>;
   }
 }
