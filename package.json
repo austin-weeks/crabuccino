@@ -36,13 +36,15 @@
     "test": "vitest --coverage",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "local-ci": "pnpm run typecheck && pnpm run lint && prettier --check . && pnpm run build && pnpm run test",
+    "format:check": "prettier --check .",
+    "local-ci": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run build && pnpm run test",
     "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.4.0",
     "@typescript/native": "npm:typescript@^7.0.2",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "@vitest/coverage-v8": "4.1.11",
     "eslint": "^10.9.1",
     "globals": "^17.11.0",

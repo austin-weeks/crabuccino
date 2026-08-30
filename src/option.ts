@@ -1,4 +1,4 @@
-import { Err, Ok, Result } from "./result";
+import { Err, Ok, type Result } from "./result";
 import { ExpectationFailed, Panic } from "./panic";
 
 /**
@@ -162,19 +162,19 @@ interface IOption<T> {
    *
    * If `this` is `Some([a, b])` this method returns `[Some(a), Some(b)]`. Otherwise, `[None, None]` is returned.
    */
-  unzip<U>(this: Option<[T, U]>): [Option<T>, Option<U>];
+  unzip<A, B = A>(this: Option<[A, B]>): [Option<A>, Option<B>];
 
   /**
    * Transposes an `Option` of a `Result` into a `Result` of an `Option`.
    *
    * `Some(Ok(_))` is mapped to `Ok(Some(_))`, `Some(Err(_))` is mapped to `Err(_)`, and `None` will be mapped to `Ok(None)`.
    */
-  transpose<E>(this: Option<Result<T, E>>): Result<Option<T>, E>;
+  transpose<T, E>(this: Option<Result<T, E>>): Result<Option<T>, E>;
 
   /**
    * Removes a single level of nesting - converts from `Option<Option<T>>` to `Option<T>`.
    */
-  flatten(this: Option<Option<T>>): Option<T>;
+  flatten<T>(this: Option<Option<T>>): Option<T>;
 }
 
 /**
@@ -211,7 +211,7 @@ export class Some<T> implements IOption<T> {
   unwrapOrElse(_f: () => T): T {
     return this.value;
   }
-  map<U>(f: (some: T) => U): Option<U> {
+  map<U>(f: (some: T) => U): Some<U> {
     return new Some(f(this.value));
   }
   inspect(f: (some: T) => void): Some<T> {
@@ -224,10 +224,10 @@ export class Some<T> implements IOption<T> {
   mapOrElse<U>(_def: () => U, f: (some: T) => U): U {
     return f(this.value);
   }
-  okOr<E>(_err: E): Result<T, E> {
+  okOr<E>(_err: E): Ok<T, E> {
     return new Ok(this.value);
   }
-  okOrElse<E>(_err: () => E): Result<T, E> {
+  okOrElse<E>(_err: () => E): Ok<T, E> {
     return new Ok(this.value);
   }
   and<U>(optb: Option<U>): Option<U> {
@@ -239,10 +239,10 @@ export class Some<T> implements IOption<T> {
   filter(predicate: (some: T) => boolean): Option<T> {
     return predicate(this.value) ? this : new None();
   }
-  or(_optb: Option<T>): Option<T> {
+  or(_optb: Option<T>): Some<T> {
     return this;
   }
-  orElse(_f: () => Option<T>): Option<T> {
+  orElse(_f: () => Option<T>): Some<T> {
     return this;
   }
   xor(optb: Option<T>): Option<T> {
@@ -257,26 +257,17 @@ export class Some<T> implements IOption<T> {
     }
     return new None();
   }
-  unzip<U>(this: Option<[T, U]>): [Option<T>, Option<U>] {
-    if (this.isSome()) {
-      return [new Some(this.value[0]), new Some(this.value[1])];
-    }
-    return [new None(), new None()];
+  unzip<A, B = A>(this: Some<[A, B]>): [Some<A>, Some<B>] {
+    return [new Some(this.value[0]), new Some(this.value[1])];
   }
-  transpose<E>(this: Option<Result<T, E>>): Result<Option<T>, E> {
-    if (this.isNone()) {
-      return new Ok(new None());
-    }
+  transpose<T, E>(this: Some<Result<T, E>>): Result<Some<T>, E> {
     if (this.value.isOk()) {
       return new Ok(new Some(this.value.value));
     }
     return new Err(this.value.error);
   }
-  flatten(this: Option<Option<T>>): Option<T> {
-    if (this.isSome()) {
-      return this.value;
-    }
-    return this as Option<T>;
+  flatten<T>(this: Some<Option<T>>): Option<T> {
+    return this.value;
   }
 }
 
@@ -328,21 +319,21 @@ export class None<T> implements IOption<T> {
   mapOrElse<U>(def: () => U, _f: (some: T) => U): U {
     return def();
   }
-  okOr<E>(err: E): Result<T, E> {
+  okOr<E>(err: E): Err<T, E> {
     return new Err(err);
   }
-  okOrElse<E>(err: () => E): Result<T, E> {
+  okOrElse<E>(err: () => E): Err<T, E> {
     return new Err(err());
   }
-  and<U>(_optb: Option<U>): Option<U> {
+  and<U>(_optb: Option<U>): None<U> {
     // @ts-expect-error - type T is irrelevant for None
-    return this as Option<U>;
+    return this as None<U>;
   }
-  andThen<U>(_f: (some: T) => Option<U>): Option<U> {
+  andThen<U>(_f: (some: T) => Option<U>): None<U> {
     // @ts-expect-error - type T is irrelevant for None
-    return this as Option<U>;
+    return this as None<U>;
   }
-  filter(_predicate: (some: T) => boolean): Option<T> {
+  filter(_predicate: (some: T) => boolean): None<T> {
     return this;
   }
   or(optb: Option<T>): Option<T> {
@@ -357,26 +348,14 @@ export class None<T> implements IOption<T> {
   zip<U>(_other: Option<U>): Option<[T, U]> {
     return this as Option<[T, U]>;
   }
-  unzip<U>(this: Option<[T, U]>): [Option<T>, Option<U>] {
-    if (this.isSome()) {
-      return [new Some(this.value[0]), new Some(this.value[1])];
-    }
+  unzip<A, B = A>(this: None<[A, B]>): [None<A>, None<B>] {
     return [new None(), new None()];
   }
-  transpose<E>(this: Option<Result<T, E>>): Result<Option<T>, E> {
-    if (this.isNone()) {
-      return new Ok(new None());
-    }
-    if (this.value.isOk()) {
-      return new Ok(new Some(this.value.value));
-    }
-    return new Err(this.value.error);
+  transpose<T, E>(this: None<Result<T, E>>): Result<None<T>, E> {
+    return new Ok(new None());
   }
-  flatten(this: Option<Option<T>>): Option<T> {
-    if (this.isSome()) {
-      return this.value;
-    }
-    return this as Option<T>;
+  flatten<T>(this: None<Option<T>>): None<T> {
+    return this as None<T>;
   }
 }
 

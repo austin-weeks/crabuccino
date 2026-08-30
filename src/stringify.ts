@@ -1,4 +1,4 @@
-/** Safely converts any time to a string representation */
+/** Safely converts any type to a string representation */
 export function stringify(v: unknown): string {
   if (v === null) return "null";
   if (typeof v !== "object") return String(v);
