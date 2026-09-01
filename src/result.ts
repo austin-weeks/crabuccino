@@ -62,14 +62,14 @@ interface IResult<T, E> {
   /**
    * Converts from `Result<T, E>` to `Option<T>`.
    *
-   * Converts self into `Some<T>` if `Ok`, and discarding the error to `None`, if `Err`.
+   * Converts self into `Some<T>` if `Ok`, discarding the error to `None`, if `Err`.
    */
   ok(): Option<T>;
 
   /**
    * Converts from `Result<T, E>` to `Option<E>`.
    *
-   * Converts self into `Some<E>` if `Err`, and discarding the success value to `None`, if `Ok`.
+   * Converts self into `Some<E>` if `Err`, discarding the success value to `None`, if `Ok`.
    */
   err(): Option<E>;
 
@@ -118,7 +118,7 @@ interface IResult<T, E> {
   /**
    * Returns the contained success value if `Ok`.
    *
-   * Throws an `ExpectationFailed` exception if the result is `Err` with a custom message `msg`.
+   * Throws an `ExpectationFailed` exception if the result is `Err`, using the custom message `msg`.
    */
   expect(msg: string): T;
 
@@ -136,7 +136,7 @@ interface IResult<T, E> {
   /**
    * Returns the contained error value if `Err`.
    *
-   * Throws an `ExpectationFailed` exception if the result is `Ok` with a custom message `msg`.
+   * Throws an `ExpectationFailed` exception if the result is `Ok`, using the custom message `msg`.
    */
   expectErr(msg: string): E;
 
@@ -170,28 +170,28 @@ interface IResult<T, E> {
   intoErr(this: Result<never, E>): E;
 
   /**
-   * Returns `res` if the result is `Ok`, otherwise returns the `Err` value self.
+   * Returns `res` if the result is `Ok`, otherwise returns the original `Err` value.
    *
    * Arguments passed to `and` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `andThen`, which is lazily evaluated.
    */
   and<U>(res: Result<U, E>): Result<U, E>;
 
   /**
-   * Returns the result of calling function `f` if the result is `Ok`, otherwise returns the `Err` value self.
+   * Returns the result of calling function `f` if the result is `Ok`, otherwise returns the original `Err` value.
    *
    * This function can be used for control flow based on result values.
    */
   andThen<U, F = E>(f: (ok: T) => Result<U, F>): Result<U, E | F>;
 
   /**
-   * Returns `res` if the result is `Err`, otherwise returns the `Ok` value self.
+   * Returns `res` if the result is `Err`, otherwise returns the original `Ok` value.
    *
    * Arguments passed to `or` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `orElse`, which is lazily evaluated.
    */
   or<F>(res: Result<T, F>): Result<T, F>;
 
   /**
-   * Returns the result of calling function `f` if the result is `Err`, otherwise returns the `Ok` value self.
+   * Returns the result of calling function `f` if the result is `Err`, otherwise returns the original `Ok` value.
    *
    * This function can be used for control flow based on result values.
    */

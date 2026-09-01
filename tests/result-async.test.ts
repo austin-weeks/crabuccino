@@ -5,8 +5,6 @@ import { inspectSymbol, None, Some } from "../src/option";
 import { ExpectationFailed, Panic } from "../src/panic";
 import { captureThrownAsync } from "./utils";
 
-// TODO: MAKE SURE TO EXERCISE WITH BOTH SYNC AND ASYNC CALLBACKS
-
 // Test Utils
 function syncAndAsyncSpies() {
   return [vi.fn(), vi.fn(async () => {})];
@@ -20,6 +18,7 @@ function asyncErr<E>(err: E): ResultAsync<never, E> {
   return new ResultAsync(Promise.resolve(new Err(err)));
 }
 
+// Tests
 describe("ResultAsync", () => {
   describe("asPromise", () => {
     it("should return the underlying promise", () => {
@@ -55,7 +54,7 @@ describe("ResultAsync", () => {
   describe("map", () => {
     describe("if Ok", () => {
       it.each([(v: string) => v + " world", async (v: string) => v + " world"])(
-        "should return ResultAsync containing the mapped value",
+        "should return a ResultAsync resolving to the mapped value",
         async mapper => {
           const mapped = asyncOk("hello").map(mapper);
           expect(mapped).toBeInstanceOf(ResultAsync);
@@ -73,7 +72,7 @@ describe("ResultAsync", () => {
     });
     describe("if Err", () => {
       it.each([() => {}, async () => {}])(
-        "should return ResultAsync contained the inner error",
+        "should return a ResultAsync resolving to the inner error",
         async mapper => {
           const mapped = asyncErr("oops").map(mapper);
           expect(mapped).toBeInstanceOf(ResultAsync);
@@ -179,7 +178,7 @@ describe("ResultAsync", () => {
 
   describe("mapErr", () => {
     describe("if Ok", () => {
-      it("should return ResultAsync resolving to the contained value", async () => {
+      it("should return a ResultAsync resolving to the contained value", async () => {
         const mapped = asyncOk("okay").mapErr(() => {});
         expect(mapped).toBeInstanceOf(ResultAsync);
         expect(await mapped.unwrap()).toEqual("okay");
@@ -194,7 +193,7 @@ describe("ResultAsync", () => {
     });
     describe("if Err", () => {
       it.each([(e: string) => e + " daisy", async (e: string) => e + " daisy"])(
-        "should return ResultAsync with the mapped error value",
+        "should return a ResultAsync with the mapped error value",
         async errMapper => {
           const mapper = asyncErr("oopsie").mapErr(errMapper);
           expect(mapper).toBeInstanceOf(ResultAsync);
@@ -222,14 +221,14 @@ describe("ResultAsync", () => {
           expect(inspect).toHaveBeenCalledWith(value);
         },
       );
-      it("should return ResultAsync resolving to the contained value", async () => {
+      it("should return a ResultAsync resolving to the contained value", async () => {
         const inspected = asyncOk("okay").inspect(() => {});
         expect(inspected).toBeInstanceOf(ResultAsync);
         expect(await inspected.unwrap()).toEqual("okay");
       });
     });
     describe("if Err", () => {
-      it("should return ResultAsync resolving to the contained error", async () => {
+      it("should return a ResultAsync resolving to the contained error", async () => {
         const inspected = asyncErr("oops").inspect(() => {});
         expect(inspected).toBeInstanceOf(ResultAsync);
         expect(await inspected.unwrapErr()).toEqual("oops");
@@ -246,7 +245,7 @@ describe("ResultAsync", () => {
 
   describe("inspectErr", () => {
     describe("if Ok", () => {
-      it("should return ResultAsync resolving to the contained value", async () => {
+      it("should return a ResultAsync resolving to the contained value", async () => {
         const inspected = asyncOk("okay").inspectErr(() => {});
         expect(inspected).toBeInstanceOf(ResultAsync);
         expect(await inspected.unwrap()).toEqual("okay");
@@ -260,7 +259,7 @@ describe("ResultAsync", () => {
       );
     });
     describe("if Err", () => {
-      it("should return ResultAsync resolving to the contained error", async () => {
+      it("should return a ResultAsync resolving to the contained error", async () => {
         const inspected = asyncErr("oops").inspectErr(() => {});
         expect(inspected).toBeInstanceOf(ResultAsync);
         expect(await inspected.unwrapErr()).toEqual("oops");
@@ -411,7 +410,7 @@ describe("ResultAsync", () => {
   describe("andThen", () => {
     describe("if Ok", () => {
       it.each([() => new Ok("okay"), () => asyncOk("okay")])(
-        "should return ResultAsync resolving to the result of the then callback",
+        "should return a ResultAsync resolving to the result of the then callback",
         async then => {
           const chained = asyncOk("first result").andThen(then);
           expect(chained).toBeInstanceOf(ResultAsync);
@@ -428,7 +427,7 @@ describe("ResultAsync", () => {
       );
     });
     describe("if Err", () => {
-      it("should return ResultAsync resolve to the contained error", async () => {
+      it("should return a ResultAsync resolving to the contained error", async () => {
         const chained = asyncErr("oops").andThen(() => asyncOk(""));
         expect(chained).toBeInstanceOf(ResultAsync);
         expect(await chained.unwrapErr()).toEqual("oops");
@@ -445,7 +444,7 @@ describe("ResultAsync", () => {
 
   describe("orElse", () => {
     describe("if Ok", () => {
-      it("should return ResultAsync resolving to the contained value", async () => {
+      it("should return a ResultAsync resolving to the contained value", async () => {
         const chained = asyncOk("okay").orElse(() => asyncOk(""));
         expect(chained).toBeInstanceOf(ResultAsync);
         expect(await chained.unwrap()).toEqual("okay");
@@ -460,7 +459,7 @@ describe("ResultAsync", () => {
     });
     describe("if Err", () => {
       it.each([() => new Ok("okay"), () => asyncOk("okay")])(
-        "should return ResultAsync resolving to the result of the else callback",
+        "should return a ResultAsync resolving to the result of the else callback",
         async or => {
           const chained = asyncErr("oops").orElse(or);
           expect(chained).toBeInstanceOf(ResultAsync);

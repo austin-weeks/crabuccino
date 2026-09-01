@@ -6,7 +6,7 @@ import { stringify } from "./stringify";
 /**
  * An asynchronous version of `Result<T, E>`.
  *
- * It is `then`able, meaning it can be `await`ed like a `Promise<Result<T, E>>`.
+ * It is _thenable_, meaning it can be `await`ed like a `Promise<Result<T, E>>`.
  *
  * `ResultAsync` exposes most of the methods of `Result` and can be used to chain asynchronous operations.
  */
@@ -45,7 +45,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   /**
    * Converts from `ResultAsync<T, E>` to `Promise<Option<T>>`.
    *
-   * Converts self into `Some<T>` if `Ok`, and discarding the error to `None`, if `Err`.
+   * Converts self into `Some<T>` if `Ok`, discarding the error to `None`, if `Err`.
    */
   ok(): Promise<Option<T>> {
     return this.promise.then(res => res.ok());
@@ -54,7 +54,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   /**
    * Converts from `ResultAsync<T, E>` to `Promise<Option<E>>`.
    *
-   * Converts self into `Some<E>` if `Err`, and discarding the success value to `None`, if `Ok`.
+   * Converts self into `Some<E>` if `Err`, discarding the success value to `None`, if `Ok`.
    */
   err(): Promise<Option<E>> {
     return this.promise.then(res => res.err());
@@ -83,7 +83,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   /**
    * Returns a promise resolving to the provided default `def` (if `Err`), or applies a function `f` to the contained value (if `Ok`).
    *
-   * The applied function `f` may be synchronous or asynchronous;
+   * The applied function `f` may be synchronous or asynchronous.
    *
    * Arguments passed to `mapOr` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `mapOrElse`, which is lazily evaluated.
    */
@@ -173,7 +173,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   /**
    * Returns a promise resolving to the contained success value if `Ok`.
    *
-   * Throws an `ExpectationFailed` exception if the result is `Err` with a custom message `msg`.
+   * Throws an `ExpectationFailed` exception if the result is `Err`, using the custom message `msg`.
    */
   expect(msg: string): Promise<T> {
     return this.promise.then(res => res.expect(msg));
@@ -200,9 +200,9 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   }
 
   /**
-   * Returns a promise resolving to the the contained error value if `Err`.
+   * Returns a promise resolving to the contained error value if `Err`.
    *
-   * Throws an `ExpectationFailed` exception if the result is `Ok` with a custom message `msg`.
+   * Throws an `ExpectationFailed` exception if the result is `Ok`, using the custom message `msg`.
    */
   expectErr(msg: string): Promise<E> {
     return this.promise.then(res => res.expectErr(msg));
@@ -265,7 +265,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   }
 
   /**
-   * Returns the result of calling function `f` if the result is `Ok`, otherwise returns the `Err` value self.
+   * Returns the result of calling function `f` if the result is `Ok`, otherwise returns the original `Err` value.
    *
    * The applied function `f` may be synchronous or asynchronous.
    *
@@ -286,7 +286,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   }
 
   /**
-   * Returns the result of calling function `f` if the result is `Err`, otherwise returns the `Ok` value self.
+   * Returns the result of calling function `f` if the result is `Err`, otherwise returns the original `Ok` value.
    *
    * The applied function `f` may be synchronous or asynchronous.
    *
