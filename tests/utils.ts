@@ -9,3 +9,12 @@ export function captureThrown<E>(f: () => void): E {
   }
   throw new UnmetThrowExpectation("did not throw");
 }
+
+export async function captureThrownAsync<E>(f: () => Promise<unknown>): Promise<E> {
+  try {
+    await f();
+  } catch (e) {
+    return e as E;
+  }
+  throw new UnmetThrowExpectation("did not throw");
+}
