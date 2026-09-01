@@ -1,6 +1,6 @@
 {
   "name": "crabuccino",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Idiomatic port of Rust's Result and Option types.",
   "author": {
     "name": "Austin Weeks",
@@ -41,6 +41,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
+    "@arethetypeswrong/core": "^0.18.5",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.4.0",
     "@typescript/native": "npm:typescript@^7.0.2",
@@ -58,7 +59,7 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "^11.5.2",
+      "version": "^11.25.0",
       "onFail": "download"
     }
   }

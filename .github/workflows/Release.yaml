@@ -2,9 +2,94 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag to push and release. Should match format <major>.<minor>.<patch> with no prefix or suffix."
+        required: true
+        type: string
+      release-notes:
+        description: "Optional notes to be in included in the GitHub release."
+        required: false
+        type: string
+      npm-publish:
+        description: "Publish to npm. You should ONLY disable this if publishing previously succeeded but releasing to GitHub failed."
+        required: false
+        default: true
+        type: boolean
+      github-release:
+        description: "Publish a GitHub tag & release. You should ONLY disable this if a release previously succeeded but publishing to npm failed."
+        required: false
+        default: true
+        type: boolean
 
 jobs:
-  Release:
+  Validate-Inputs:
     runs-on: ubuntu-latest
     steps:
-      - run: exit 0
+      - name: Ensure we're on the main branch
+        run: |
+          if [[ ${{ github.ref_name }} != "main" ]]; then
+            echo "Release workflow must be run on the main branch" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - name: Ensure passed tag matches package version
+        run: |
+          VERSION=$(cat package.json | jq -r '.version')
+          if [[ $VERSION != ${{ inputs.version }} ]]; then
+            echo "Input tag ${{ inputs.version }} does not match crate version $VERSION found in package.json" >&2
+            exit 1
+          fi
+
+  Run-Checks:
+    needs: Validate-Inputs
+    uses: ./.github/workflows/CI.yaml
+
+  Publish-npm:
+    needs: Run-Checks
+    runs-on: ubuntu-latest
+    if: ${{ inputs.npm-publish == true }}
+    permissions:
+      contents: read
+      id-token: write
+    environment: publish
+    steps:
+      - uses: actions/checkout@v7
+      # Setup .npmrc file to publish to npm
+      - uses: pnpm/setup@v2
+        with:
+          version: 11.25.0
+          cache: true
+      - run: pnpm ci
+      - run: pnpm publish --provenance --access public
+
+  Tag-and-Release:
+    needs: Run-Checks
+    runs-on: ubuntu-latest
+    if: ${{ inputs.github-release == true }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: push-tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          NEW_TAG="v${{ inputs.version }}"
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
+          echo "github_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
+          tag_name: ${{ steps.push-tag.outputs.github_tag }}
+          body: ${{ inputs.release-notes }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
