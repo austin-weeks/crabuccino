@@ -3,7 +3,10 @@ import { ExpectationFailed, Panic } from "./panic";
 import { ResultAsync } from "./result-async";
 import { stringify } from "./stringify";
 
-interface IResult<T, E> {
+/**
+ * Defines methods implemented by the `Result` types `Ok` and `Err`.
+ */
+interface ResultMethods<T, E> {
   /**
    * Converts the `Result` into a `ResultAsync` that can be `await`ed and used to chain `async` operations.
    */
@@ -252,7 +255,7 @@ export type Result<T, E> = Ok<T, E> | Err<T, E>;
 /**
  * The `Ok(T)` variant of `Result<T, E>`.
  */
-export class Ok<T, E> implements IResult<T, E> {
+export class Ok<T, E> implements ResultMethods<T, E> {
   /** Creates an `Ok(T)` variant of `Result<T, E>`. */
   constructor(private readonly value: T) {}
   toString() {
@@ -387,7 +390,7 @@ export class Ok<T, E> implements IResult<T, E> {
 /**
  * The `Err(T)` variant of `Result<T, E>`.
  */
-export class Err<T, E> implements IResult<T, E> {
+export class Err<T, E> implements ResultMethods<T, E> {
   /** Creates an `Err(E)` variant of `Result<T, E>`. */
   constructor(private readonly error: E) {}
   toString() {
