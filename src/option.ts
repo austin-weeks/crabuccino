@@ -5,11 +5,7 @@ import { stringify } from "./stringify";
 // Node/Vitest will try to call '.inspect()' - override it
 export const inspectSymbol = Symbol.for("nodejs.util.inspect.custom");
 
-/**
- * Construct an `Option<T>` from a value of type `T` that may be `null` or `undefined`.
- *
- * If the value is `null` or `undefined`, a `None` variant will be returned, otherwise a `Some<T>` variant containing the non-nullish value will be returned.
- */
+// Docs are in index.ts on the crab export.
 export function fromNullish<T>(v: T | null | undefined): Option<NonNullable<T>> {
   if (v === null || v === undefined) {
     return new None();
@@ -22,7 +18,10 @@ export function fromNullish<T>(v: T | null | undefined): Option<NonNullable<T>> 
  */
 export type Option<T> = Some<T> | None<T>;
 
-interface IOption<T> {
+/**
+ * Defines methods implemented by the `Option` types `Some` and `None`.
+ */
+interface OptionMethods<T> {
   /**
    * Converts the option to an idiomatic JS optional value `T | undefined`.
    */
@@ -223,7 +222,7 @@ interface IOption<T> {
 /**
  * The `Some(T)` variant of `Option<T>`.
  */
-export class Some<T> implements IOption<T> {
+export class Some<T> implements OptionMethods<T> {
   /** Creates a `Some(T)` variant of `Option<T>`. */
   constructor(private readonly value: T) {}
   toString(): string {
@@ -349,7 +348,7 @@ export class Some<T> implements IOption<T> {
  *
  * _Note_: the `T` generic is required for type inference, but has no meaning on this variant.
  */
-export class None<T> implements IOption<T> {
+export class None<T> implements OptionMethods<T> {
   // TODO: re-use a singleton to avoid allocations
   /** Creates a `None` variant of `Option<T>`. */
   constructor() {}
