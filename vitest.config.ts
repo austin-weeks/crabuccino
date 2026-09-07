@@ -4,6 +4,10 @@ export default defineConfig({
   test: {
     coverage: {
       provider: "v8",
+      enabled: true,
+      thresholds: {
+        100: true,
+      },
     },
   },
 });

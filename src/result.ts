@@ -1,4 +1,4 @@
-import { inspectSymbol, None, Some, type Option } from "./option";
+import { None, Some, type Option } from "./option";
 import { ExpectationFailed, Panic } from "./panic";
 import { ResultAsync } from "./result-async";
 import { stringify } from "./stringify";
@@ -77,46 +77,46 @@ interface ResultMethods<T, E> {
   err(): Option<E>;
 
   /**
-   * Maps a `Result<T, E>` to a `Result<U, E>` by applying a function `f` to a contained `Ok` value, leaving an `Err` value untouched.
+   * Maps a `Result<T, E>` to a `Result<U, E>` by applying a function `fn` to a contained `Ok` value, leaving an `Err` value untouched.
    *
    * This function can be used to compose the results of two functions.
    */
-  map<U>(f: (ok: T) => U): Result<U, E>;
+  map<U>(fn: (ok: T) => U): Result<U, E>;
 
   /**
-   * Returns the provided default `def` (if `Err`), or applies a function `f` to the contained value (if `Ok`).
+   * Returns the provided default `def` (if `Err`), or applies a function `fn` to the contained value (if `Ok`).
    *
    * Arguments passed to `mapOr` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `mapOrElse`, which is lazily evaluated.
    */
-  mapOr<U>(def: U, f: (ok: T) => U): U;
+  mapOr<U>(def: U, fn: (ok: T) => U): U;
 
   /**
-   * Maps a `Result<T, E>` to `U` by applying fallback function `def` to a contained `Err` value, or function `f` to a contained `Ok` value.
+   * Maps a `Result<T, E>` to `U` by applying fallback function `def` to a contained `Err` value, or function `fn` to a contained `Ok` value.
    *
    * This function can be used to unpack a successful result while handling an error.
    */
-  mapOrElse<U>(def: (err: E) => U, f: (ok: T) => U): U;
+  mapOrElse<U>(def: (err: E) => U, fn: (ok: T) => U): U;
 
   /**
-   * Maps a `Result<T, E>` to `Result<T, F>` by applying a function `f` to a contained `Err` value, leaving an `Ok` value untouched.
+   * Maps a `Result<T, E>` to `Result<T, F>` by applying a function `fn` to a contained `Err` value, leaving an `Ok` value untouched.
    *
    * This function can be used to pass through a successful result while handling an error.
    */
-  mapErr<F>(f: (err: E) => F): Result<T, F>;
+  mapErr<F>(fn: (err: E) => F): Result<T, F>;
 
   /**
-   * Calls a function `f` with the contained success value if `Ok`.
+   * Calls a function `fn` with the contained success value if `Ok`.
    *
    * Returns the original result.
    */
-  inspect(f: (ok: T) => void): Result<T, E>;
+  inspect(fn: (ok: T) => void): Result<T, E>;
 
   /**
-   * Calls a function `f` with the contained error value if `Err`.
+   * Calls a function `fn` with the contained error value if `Err`.
    *
    * Returns the original result.
    */
-  inspectErr(f: (err: E) => void): Result<T, E>;
+  inspectErr(fn: (err: E) => void): Result<T, E>;
 
   /**
    * Returns the contained success value if `Ok`.
@@ -180,11 +180,11 @@ interface ResultMethods<T, E> {
   and<U>(res: Result<U, E>): Result<U, E>;
 
   /**
-   * Returns the result of calling function `f` if the result is `Ok`, otherwise returns the original `Err` value.
+   * Returns the result of calling function `fn` if the result is `Ok`, otherwise returns the original `Err` value.
    *
    * This function can be used for control flow based on result values.
    */
-  andThen<U, F = E>(f: (ok: T) => Result<U, F>): Result<U, E | F>;
+  andThen<U, F = E>(fn: (ok: T) => Result<U, F>): Result<U, E | F>;
 
   /**
    * Returns `res` if the result is `Err`, otherwise returns the original `Ok` value.
@@ -194,11 +194,11 @@ interface ResultMethods<T, E> {
   or<F>(res: Result<T, F>): Result<T, F>;
 
   /**
-   * Returns the result of calling function `f` if the result is `Err`, otherwise returns the original `Ok` value.
+   * Returns the result of calling function `fn` if the result is `Err`, otherwise returns the original `Ok` value.
    *
    * This function can be used for control flow based on result values.
    */
-  orElse<F, U = T>(f: (err: E) => Result<U, F>): Result<T | U, F>;
+  orElse<F, U = T>(fn: (err: E) => Result<U, F>): Result<T | U, F>;
 
   /**
    * Returns the contained `Ok` value or a provided default `def` if `Err`.
@@ -208,9 +208,9 @@ interface ResultMethods<T, E> {
   unwrapOr(def: T): T;
 
   /**
-   * Returns the contained `Ok` value or computes it from function `f` if `Err`.
+   * Returns the contained `Ok` value or computes it from function `fn` if `Err`.
    */
-  unwrapOrElse(f: (err: E) => T): T;
+  unwrapOrElse(fn: (err: E) => T): T;
 
   /**
    * Match on each variant of `Result`.
@@ -257,19 +257,15 @@ export type Result<T, E> = Ok<T, E> | Err<T, E>;
  */
 export class Ok<T, E> implements ResultMethods<T, E> {
   /** Creates an `Ok(T)` variant of `Result<T, E>`. */
-  constructor(private readonly value: T) {}
+  constructor(private readonly v: T) {}
   toString() {
-    return `Ok(${stringify(this.value)})`;
+    return `Ok(${stringify(this.v)})`;
   }
   toJSON() {
     return {
       ResultVariant: "Ok",
-      inner: this.value,
+      inner: this.v,
     };
-  }
-  // Node/Vitest will try to call '.inspect()' - override it
-  [inspectSymbol]() {
-    return this.toString();
   }
 
   /**
@@ -283,7 +279,7 @@ export class Ok<T, E> implements ResultMethods<T, E> {
    * ```
    */
   inner(): T {
-    return this.value;
+    return this.v;
   }
 
   toAsync(): ResultAsync<T, E> {
@@ -293,7 +289,7 @@ export class Ok<T, E> implements ResultMethods<T, E> {
     return true;
   }
   isOkAnd(predicate: (ok: T) => boolean): boolean {
-    return predicate(this.value);
+    return predicate(this.v);
   }
   isErr(): this is Err<T, E> {
     return false;
@@ -302,50 +298,53 @@ export class Ok<T, E> implements ResultMethods<T, E> {
     return false;
   }
   ok(): Some<T> {
-    return new Some(this.value);
+    return new Some(this.v);
   }
   err(): None<E> {
     return new None();
   }
-  map<U>(f: (ok: T) => U): Ok<U, E> {
-    return new Ok(f(this.value));
+  map<U>(fn: (ok: T) => U): Ok<U, E> {
+    return new Ok(fn(this.v));
   }
-  mapOr<U>(_def: U, f: (ok: T) => U): U {
-    return f(this.value);
+  mapOr<U>(_def: U, fn: (ok: T) => U): U {
+    return fn(this.v);
   }
-  mapOrElse<U>(_def: (err: E) => U, f: (ok: T) => U): U {
-    return f(this.value);
+  mapOrElse<U>(_def: (err: E) => U, fn: (ok: T) => U): U {
+    return fn(this.v);
   }
-  mapErr<F>(_f: (err: E) => F): Ok<T, F> {
+  mapErr<F>(_fn: (err: E) => F): Ok<T, F> {
     // @ts-expect-error - the error type is irrelevant for Ok
     return this as Ok<T, F>;
   }
-  inspect(f: (ok: T) => void): Ok<T, E> {
-    f(this.value);
+  inspect(fn: (ok: T) => void): Ok<T, E> {
+    if (typeof fn !== "function") {
+      // @ts-expect-error - Vitest tries to call .inspect() to represent the object in test output.
+      // It won't pass a function so this is how we detect it. Just return the string representation...
+      return this.toString();
+    }
+    fn(this.v);
     return this;
   }
-  inspectErr(_f: (err: E) => void): Ok<T, E> {
+  inspectErr(_fn: (err: E) => void): Ok<T, E> {
     return this;
   }
   expect(_msg: string): T {
-    return this.value;
+    return this.v;
   }
   unwrap(): T {
-    return this.value;
+    return this.v;
   }
   expectErr(msg: string): never {
     throw new ExpectationFailed(
-      `${msg}: expected result to be an 'Err' but is an 'Ok' value: ${stringify(this.value)}`,
+      `${msg}: expected result to be an 'Err' but is an 'Ok' value: ${stringify(this.v)}`,
       this,
     );
   }
   unwrapErr(): never {
-    throw new Panic(
-      `Called 'Result.unwrapErr()' on an 'Ok' value: ${stringify(this.value)}`,
-    );
+    throw new Panic(`Called 'Result.unwrapErr()' on an 'Ok' value: ${stringify(this.v)}`);
   }
   intoOk(this: Ok<T, never>): T {
-    return this.value;
+    return this.v;
   }
   intoErr(this: Ok<never, E>): never {
     throw new Panic(
@@ -355,35 +354,35 @@ export class Ok<T, E> implements ResultMethods<T, E> {
   and<U>(res: Result<U, E>): Result<U, E> {
     return res;
   }
-  andThen<U, F = E>(f: (ok: T) => Result<U, F>): Result<U, E | F> {
-    return f(this.value);
+  andThen<U, F = E>(fn: (ok: T) => Result<U, F>): Result<U, E | F> {
+    return fn(this.v);
   }
   or<F>(_res: Result<T, F>): Ok<T, F> {
     // @ts-expect-error - error type is irrelevant to Ok
     return this as Ok<T, F>;
   }
-  orElse<F, U = T>(_f: (err: E) => Result<U, F>): Ok<T, F> {
+  orElse<F, U = T>(_fn: (err: E) => Result<U, F>): Ok<T, F> {
     // @ts-expect-error - error type is irrelevant to Ok
     return this as Ok<T, F>;
   }
   unwrapOr(_def: T): T {
-    return this.value;
+    return this.v;
   }
-  unwrapOrElse(_f: (err: E) => T): T {
-    return this.value;
+  unwrapOrElse(_fn: (err: E) => T): T {
+    return this.v;
   }
   match<A, B = A>(ok: (t: T) => A, _err: (e: E) => B): A | B {
-    return ok(this.value);
+    return ok(this.v);
   }
   transpose<T>(this: Result<Option<T>, E>): Option<Ok<T, E>> {
     const self = this as Ok<Option<T>, E>;
-    if (self.value.isSome()) {
-      return new Some(new Ok(self.value.inner()));
+    if (self.v.isSome()) {
+      return new Some(new Ok(self.v.inner()));
     }
     return new None();
   }
   flatten<T>(this: Result<Result<T, E>, E>): Result<T, E> {
-    return (this as Ok<Result<T, E>, E>).value;
+    return (this as Ok<Result<T, E>, E>).v;
   }
 }
 
@@ -392,19 +391,15 @@ export class Ok<T, E> implements ResultMethods<T, E> {
  */
 export class Err<T, E> implements ResultMethods<T, E> {
   /** Creates an `Err(E)` variant of `Result<T, E>`. */
-  constructor(private readonly error: E) {}
+  constructor(private readonly e: E) {}
   toString() {
-    return `Err(${stringify(this.error)})`;
+    return `Err(${stringify(this.e)})`;
   }
   toJSON() {
     return {
       ResultVariant: "Err",
-      inner: this.error,
+      inner: this.e,
     };
-  }
-  // Node/Vitest will try to call '.inspect()' - override it
-  [inspectSymbol]() {
-    return this.toString();
   }
 
   /**
@@ -418,7 +413,7 @@ export class Err<T, E> implements ResultMethods<T, E> {
    * ```
    */
   inner(): E {
-    return this.error;
+    return this.e;
   }
   toAsync(): ResultAsync<T, E> {
     return new ResultAsync(Promise.resolve(this));
@@ -434,50 +429,53 @@ export class Err<T, E> implements ResultMethods<T, E> {
     return true;
   }
   isErrAnd(predicate: (err: E) => boolean): boolean {
-    return predicate(this.error);
+    return predicate(this.e);
   }
   ok(): None<T> {
     return new None();
   }
   err(): Some<E> {
-    return new Some(this.error);
+    return new Some(this.e);
   }
-  map<U>(_f: (ok: T) => U): Err<U, E> {
+  map<U>(_fn: (ok: T) => U): Err<U, E> {
     // @ts-expect-error - the okay type is irrelevant to Err
     return this as Err<U, E>;
   }
-  mapOr<U>(def: U, _f: (ok: T) => U): U {
+  mapOr<U>(def: U, _fn: (ok: T) => U): U {
     return def;
   }
-  mapOrElse<U>(def: (err: E) => U, _f: (ok: T) => U): U {
-    return def(this.error);
+  mapOrElse<U>(def: (err: E) => U, _fn: (ok: T) => U): U {
+    return def(this.e);
   }
-  mapErr<F>(f: (err: E) => F): Err<T, F> {
-    return new Err(f(this.error));
+  mapErr<F>(fn: (err: E) => F): Err<T, F> {
+    return new Err(fn(this.e));
   }
-  inspect(_f: (ok: T) => void): Err<T, E> {
+  inspect(_fn: (ok: T) => void): Err<T, E> {
+    if (typeof _fn !== "function") {
+      // @ts-expect-error - Vitest tries to call .inspect() to represent the object in test output.
+      // It won't pass a function so this is how we detect it. Just return the string representation...
+      return this.toString();
+    }
     return this;
   }
-  inspectErr(f: (err: E) => void): Err<T, E> {
-    f(this.error);
+  inspectErr(fn: (err: E) => void): Err<T, E> {
+    fn(this.e);
     return this;
   }
   expect(msg: string): never {
     throw new ExpectationFailed(
-      `${msg}: expected result to be an 'Ok' but is an 'Err' value: ${stringify(this.error)}`,
+      `${msg}: expected result to be an 'Ok' but is an 'Err' value: ${stringify(this.e)}`,
       this,
     );
   }
   unwrap(): T {
-    throw new Panic(
-      `Called 'Result.unwrap()' on an 'Err' value: ${stringify(this.error)}`,
-    );
+    throw new Panic(`Called 'Result.unwrap()' on an 'Err' value: ${stringify(this.e)}`);
   }
   expectErr(_msg: string): E {
-    return this.error;
+    return this.e;
   }
   unwrapErr(): E {
-    return this.error;
+    return this.e;
   }
   intoOk(this: Err<T, never>): never {
     throw new Panic(
@@ -486,30 +484,30 @@ export class Err<T, E> implements ResultMethods<T, E> {
   }
 
   intoErr(this: Err<never, E>): E {
-    return this.error;
+    return this.e;
   }
   and<U>(_res: Result<U, E>): Err<U, E> {
     // @ts-expect-error - the okay type is irrelevant to Err
     return this as Err<U, E>;
   }
-  andThen<U, F = E>(_f: (ok: T) => Result<U, F>): Err<U, E> {
+  andThen<U, F = E>(_fn: (ok: T) => Result<U, F>): Err<U, E> {
     // @ts-expect-error - okay type is irrelevant for Err
     return this as Err<U, E>;
   }
   or<F>(res: Result<T, F>): Result<T, F> {
     return res;
   }
-  orElse<F, U = T>(f: (err: E) => Result<U, F>): Result<T | U, F> {
-    return f(this.error);
+  orElse<F, U = T>(fn: (err: E) => Result<U, F>): Result<T | U, F> {
+    return fn(this.e);
   }
   unwrapOr(def: T): T {
     return def;
   }
-  unwrapOrElse(f: (err: E) => T): T {
-    return f(this.error);
+  unwrapOrElse(fn: (err: E) => T): T {
+    return fn(this.e);
   }
   match<A, B = A>(_ok: (t: T) => A, err: (e: E) => B): A | B {
-    return err(this.error);
+    return err(this.e);
   }
   transpose<T>(this: Result<Option<T>, E>): Some<Err<T, E>> {
     return new Some(this as Err<T, E>);

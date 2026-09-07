@@ -28,35 +28,15 @@ export class ExpectationFailed extends Panic {
   }
 }
 
-/**
- * Throws a {@link Panic} Error.
- *
- * `panic` is closely tied with the `unwrap` method of both the `Option` and `Result` types. Both implementations
- * call `panic` when they are set to `None` or `Err` variants.
- *
- * `panic` should be used when your program reaches a truly unrecoverable state. Expected error states should be
- * modeled with the `Result` and `ResultAsync` types.
- *
- * @example
- * ```
- * import { panic } from "crabuccino";
- *
- * function divide(numerator: number, denominator: number): number {
- *   if (denominator === 0) {
- *     panic("cannot divide by zero");
- *   }
- *   return numerator / denominator;
- * }
- * ```
- */
+// Docs on crab.ts
 export function panic(msg: string): never {
   throw new Panic(msg);
 }
 
-// Idk if I want this - maybe it'll be useful maybe not...
-export function recoverPanic(f: () => void): Option<Panic> {
+// TODO: should I export this or just remove?
+export function recoverPanic(fn: () => void): Option<Panic> {
   try {
-    f();
+    fn();
   } catch (e: unknown) {
     if (e instanceof Panic) {
       return new Some(e);

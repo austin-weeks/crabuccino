@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { ResultAsync } from "../src/result-async";
 import { Err, Ok } from "../src/result";
-import { inspectSymbol, None, Some } from "../src/option";
+import { None, Some } from "../src/option";
 import { ExpectationFailed, Panic } from "../src/panic";
 import { captureThrownAsync } from "./utils";
 
@@ -240,6 +240,12 @@ describe("ResultAsync", () => {
           expect(inspector).not.toHaveBeenCalled();
         },
       );
+    });
+
+    it("should return a string representation of ResultAsync if passed a non-function", async () => {
+      const res = asyncOk("okay");
+      // @ts-expect-error - have to test the non-function case
+      expect(res.inspect()).toEqual(res.toString());
     });
   });
 
@@ -565,6 +571,30 @@ describe("ResultAsync", () => {
     });
   });
 
+  describe("thenDo", () => {
+    it.each([
+      async () => new Ok<string, never>("okay"),
+      () => new ResultAsync<string, never>(Promise.resolve(new Ok("okay"))),
+    ])(
+      "should return a ResultAsync resolving to the result of the then callback",
+      async then => {
+        const chained = asyncOk("first result").thenDo(then);
+        expect(chained).toBeInstanceOf(ResultAsync);
+        expect(await chained.unwrap()).toEqual("okay");
+      },
+    );
+    it.each([vi.fn(async () => new Ok<string, never>("okay")), vi.fn(() => asyncOk(""))])(
+      "should call the then callback with the inner result",
+      async then => {
+        const value = {};
+        const res = asyncOk(value);
+        res.thenDo(then);
+        const innerRes = await res;
+        expect(then).toHaveBeenCalledWith(innerRes);
+      },
+    );
+  });
+
   describe("transpose", () => {
     it("should resolve to None if Ok(None)", async () => {
       const opt = await asyncOk(new None()).transpose();
@@ -609,12 +639,6 @@ describe("ResultAsync", () => {
   describe("toString", () => {
     it("should return a string representation of ResultAsync", () => {
       expect(asyncOk("okay").toString()).toEqual("ResultAsync");
-    });
-  });
-
-  describe("inspect symbol", () => {
-    it("should delegate to toString()", () => {
-      expect(asyncOk("okay")[inspectSymbol]()).toEqual("ResultAsync");
     });
   });
 
