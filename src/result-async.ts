@@ -363,17 +363,18 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   /**
    * Returns the result of calling asynchronous function `fn` with the inner result.
    *
-   * This function can be useful for entering procedural-style code blocks when `ResultAsync`'s functional-style methods are awkward to use.
+   * This function can be useful for entering procedural-style code blocks when `ResultAsync`'s functional-style methods are awkward for your use case.
    *
    * @example
    * ```
    * import crab, { ResultAsync } from "crabuccino";
    *
-   * const res: ResultAsync<string, Error> =
+   * const res: ResultAsync<string, Error> = crab.ErrAsync(new Error("operation failed"));
+   *
    * const next = res.thenDo(async res => {
    *   if (res.isErr()) {
    *     console.error("Oops!", res.inner());
-   *     const cleanupRes = cleanup(res.inner());
+   *     const cleanupRes = await cleanup(res.inner());
    *     if (cleanup.isErr()) {
    *       crab.panic("We're in real bad trouble...");
    *     }

@@ -9,9 +9,9 @@ import { crab } from "./crab";
 /**
  * Utility functions for creating type variants and performing operations safely.
  *
- * To create instances of `Option<T>` or `Result<T, E>`, use `crab.Some(T)`, `crab.None`, `crab.Ok(T)` and `crab.Err(E)`.
+ * To create instances of `Option<T>`, `Result<T, E>`, or `ResultAsync<T, E>`, use `crab.Some(T)`, `crab.None`, `crab.Ok(T)`, `crab.Err(E)`, `crab.OkAsync(T)`, and `crab.ErrAsync(E)`.
  *
- * To safely use operations that may throw, use `crab.try()`, `crab.tryAsync()`, `crab.makeSafe()`, and `crab.makeSafeAsync()`.
+ * To safely execute functions that may throw, use `crab.try()`, `crab.tryAsync()`, `crab.makeSafe()`, and `crab.makeSafeAsync()`.
  *
  * If you're working with arrays of `Result` or `ResultAsync`, use `crab.shortCircuit()`, `crab.all()`, or `crab.allSettled()` to combine results.
  *
@@ -22,7 +22,7 @@ import { crab } from "./crab";
  *
  * - `crab.Some` - create a `Some(T)`
  * - `crab.None` - get the `None` variant
- * - `crab.fromNullish` - convert a nullish value into an `Option`
+ * - `crab.fromNullish` - convert a nullish value to an `Option`
  *
  * - `crab.try` - execute a function that may throw and return a `Result`
  * - `crab.tryAsync` - execute an async function that may throw and return a `ResultAsync`

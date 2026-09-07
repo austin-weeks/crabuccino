@@ -1,4 +1,4 @@
-import crab, { Err, None, Ok, Result, ResultAsync, Some } from "../src/index";
+import crab, { Err, None, Ok, Option, Result, ResultAsync, Some } from "../src/index";
 import { crab as ogCrab } from "../src/crab";
 import { describe, expect, it } from "vitest";
 
@@ -17,6 +17,8 @@ describe("index", () => {
   it("should export Result and Option types", () => {
     const res: Result<unknown, unknown> = new Ok("");
     void res;
+    const opt: Option<unknown> = new Some("");
+    void opt;
   });
   it("should export the crab utility object", () => {
     expect(crab).toStrictEqual(ogCrab);

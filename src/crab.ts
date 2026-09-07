@@ -8,6 +8,8 @@ import { _try, all, allSettled, combine, tryAsync } from "./utilities";
 export const crab = {
   /**
    * Construct an `Ok(T)` variant of `Result<T, E>`.
+   *
+   * Equivalent to `new Ok(val)`.
    */
   Ok: <T>(ok: T) => new Ok<T, never>(ok),
 
@@ -18,6 +20,8 @@ export const crab = {
 
   /**
    * Construct an `Err(E)` variant of `Result<T, E>`.
+   *
+   * Equivalent to `new Err(error)`.
    */
   Err: <E>(err: E) => new Err<never, E>(err),
 
@@ -53,7 +57,7 @@ export const crab = {
   },
 
   /**
-   * Safely executes a function that may throw, returning `Ok` if the function is successful and `Err` if the function throws.
+   * Safely executes a function `fn` that may throw, returning `Ok` if the function is successful or `Err` if the function throws.
    *
    * The provided `errMapper` is called if the function throws, and is responsible for converting the thrown value into a typed error of your choice.
    *
@@ -64,7 +68,7 @@ export const crab = {
   try: _try,
 
   /**
-   * Safely executes an async function that may throw, returning `Ok` if the function is successful and `Err` if the function throws.
+   * Safely executes an async function `fn` that may throw, returning a promise that resolves to `Ok` if the function is successful or `Err` if the function throws.
    *
    * The provided `errMapper` is called if the function throws, and is responsible for converting the thrown value into a typed error of your choice.
    *
@@ -75,7 +79,7 @@ export const crab = {
   tryAsync,
 
   /**
-   * Wraps a potentially throwing function in a safe function that returns `Ok` on success and `Err` if the wrapped function throws.
+   * Wraps a potentially throwing function in a safe function that returns `Ok` on success or `Err` if the wrapped function throws.
    *
    * The provided `errMapper` is called when the wrapped function throws, and is responsible for converting the thrown value into a typed error of your choice.
    *
@@ -103,7 +107,7 @@ export const crab = {
         _try(() => fn(...args), errMapper),
 
   /**
-   * Wraps a potentially throwing async function in a safe function that returns a `ResultAsync` resolving to `Ok` on success and `Err` if the wrapped function throws.
+   * Wraps a potentially throwing async function in a safe function that returns a `ResultAsync` resolving to `Ok` on success or `Err` if the wrapped function throws.
    *
    * The provided `errMapper` is called when the wrapped function throws, and is responsible for converting the thrown value into a typed error of your choice.
    *
@@ -137,7 +141,7 @@ export const crab = {
   /**
    * Given an array of `Result<T, E>`, returns a `Result<T[], E>`, where an `Ok` value contains the accumulated `Ok` results, and an `Err` value contains the first encountered `Err` result.
    *
-   * This short circuits, mean only the _first_ `Err` value is returned. This makes it useful for all-or-nothing operations where a failure in one operation means a failure of all operations.
+   * This short circuits, meaning only the _first_ encountered `Err` value is returned. This makes it useful for all-or-nothing operations where a failure in one operation means a failure of all operations.
    *
    * For the async version of this function, see {@link crab.all}.
    */
@@ -150,29 +154,27 @@ export const crab = {
    *
    * Similar to `Promise.all`, this short circuits, meaning only the _first_ resolved `Err` value is returned.
    *
-   * To await all results regardless of , use {@link crab.allSettled}.
+   * To await all results regardless of whether they succeed, use {@link crab.allSettled}.
    */
   all,
 
   /**
    * The typesafe version of `Promise.allSettled`.
    *
-   * Given an array of `ResultAsync<T, E>`, returns a promise resolving to `Result<T, E>[]` .
+   * Given an array of `ResultAsync<T, E>`, returns a promise resolving to `Result<T, E>[]`.
    *
-   * Similar to `Promise.allSettled`, this waits for _all_ results to settle regardless of whether they resolve to an `Ok` or an `Err`.
+   * Similar to `Promise.allSettled`, this waits for _all_ async results to finish regardless of whether they succeed.
    *
    * To abort on the first encountered `Err`, use {@link crab.all}.
    */
   allSettled,
 
   /**
-   * Throws a `Panic` Error.
+   * Throws a `Panic` error.
    *
-   * `panic` is closely tied with the `unwrap` method of both the `Option` and `Result` types. Both implementations
-   * call `panic` when they are set to `None` or `Err` variants.
+   * `panic` is closely tied with the `unwrap` methods on the `Option`, `Result`, and `ResultAsync` types. Implementations call `panic` when they are not the expected variants.
    *
-   * `panic` should be used when your program reaches a truly unrecoverable state. Expected error states should be
-   * modeled with the `Result` and `ResultAsync` types.
+   * `panic` should only be used when your program reaches a truly unrecoverable state. Expected error states should be modeled with the `Result` and `ResultAsync` types.
    *
    * @example
    * ```
