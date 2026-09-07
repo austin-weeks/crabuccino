@@ -1,4 +1,4 @@
-import { inspectSymbol, type Option } from "./option";
+import { type Option } from "./option";
 import { Panic } from "./panic";
 import { Err, Ok, type Result } from "./result";
 import { stringify } from "./stringify";
@@ -12,13 +12,9 @@ import { stringify } from "./stringify";
  */
 export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   /** Creates a `ResultAsync<T, E>` from a `Promise` resolving to `Result<T, E>`. */
-  constructor(readonly promise: Promise<Result<T, E>>) {}
+  constructor(readonly p: Promise<Result<T, E>>) {}
   toString(): string {
     return "ResultAsync";
-  }
-  // Override Node/Vitest '.inspect()'
-  [inspectSymbol]() {
-    return this.toString();
   }
 
   then<TResult1 = Result<T, E>, TResult2 = never>(
@@ -27,11 +23,8 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
     onrejected?:
       ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null | undefined,
   ): PromiseLike<TResult1 | TResult2> {
-    return this.promise.then(onfulfilled, onrejected);
+    return this.p.then(onfulfilled, onrejected);
   }
-
-  // TODO: implement these
-  // ---------- Factory Methods ----------
 
   // ---------- Instance Methods ----------
 
@@ -39,7 +32,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * Returns the `ResultAsync<T, E>` as a `Promise<Result<T, E>>`.
    */
   asPromise(): Promise<Result<T, E>> {
-    return this.promise;
+    return this.p;
   }
 
   /**
@@ -48,7 +41,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * Converts self into `Some<T>` if `Ok`, discarding the error to `None`, if `Err`.
    */
   ok(): Promise<Option<T>> {
-    return this.promise.then(res => res.ok());
+    return this.p.then(res => res.ok());
   }
 
   /**
@@ -57,95 +50,101 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * Converts self into `Some<E>` if `Err`, discarding the success value to `None`, if `Ok`.
    */
   err(): Promise<Option<E>> {
-    return this.promise.then(res => res.err());
+    return this.p.then(res => res.err());
   }
 
   /**
-   * Maps a `ResultAsync<T, E>` to a `ResultAsync<U, E>` by applying a function `f` to a contained `Ok` value, leaving an `Err` value untouched.
+   * Maps a `ResultAsync<T, E>` to a `ResultAsync<U, E>` by applying a function `fn` to a contained `Ok` value, leaving an `Err` value untouched.
    *
-   * The applied function `f` may be synchronous or asynchronous.
+   * The applied function `fn` may be synchronous or asynchronous.
    *
    * This function can be used to compose the results of two functions.
    */
-  map<U>(f: (ok: T) => U | Promise<U>): ResultAsync<U, E> {
+  map<U>(fn: (ok: T) => U | Promise<U>): ResultAsync<U, E> {
     return new ResultAsync(
-      this.promise.then(async res => {
+      this.p.then(async res => {
         if (res.isErr()) {
           // @ts-expect-error - okay type is irrelevant for Err
           return res as Err<U, E>;
         }
 
-        return new Ok(await f(res.inner()));
+        return new Ok(await fn(res.inner()));
       }),
     );
   }
 
   /**
-   * Returns a promise resolving to the provided default `def` (if `Err`), or applies a function `f` to the contained value (if `Ok`).
+   * Returns a promise resolving to the provided default `def` (if `Err`), or applies a function `fn` to the contained value (if `Ok`).
    *
-   * The applied function `f` may be synchronous or asynchronous.
+   * The applied function `fn` may be synchronous or asynchronous.
    *
    * Arguments passed to `mapOr` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `mapOrElse`, which is lazily evaluated.
    */
-  mapOr<U>(def: U, f: (ok: T) => U | Promise<U>): Promise<U> {
-    return this.promise.then(async res => {
+  mapOr<U>(def: U, fn: (ok: T) => U | Promise<U>): Promise<U> {
+    return this.p.then(async res => {
       if (res.isOk()) {
-        return await f(res.inner());
+        return await fn(res.inner());
       }
       return def;
     });
   }
 
   /**
-   * Maps a `ResultAsync<T, E>` to `Promise<U>` by applying fallback function `def` to a contained `Err` value, or function `f` to a contained `Ok` value.
+   * Maps a `ResultAsync<T, E>` to `Promise<U>` by applying fallback function `def` to a contained `Err` value, or function `fn` to a contained `Ok` value.
    *
-   * The functions `f` and `def` may be synchronous or asynchronous
+   * The functions `fn` and `def` may be synchronous or asynchronous
    *
    * This function can be used to unpack a successful result while handling an error.
    */
   mapOrElse<U>(
     def: (err: E) => U | Promise<U>,
-    f: (ok: T) => U | Promise<U>,
+    fn: (ok: T) => U | Promise<U>,
   ): Promise<U> {
-    return this.promise.then(async res => {
+    return this.p.then(async res => {
       if (res.isOk()) {
-        return await f(res.inner());
+        return await fn(res.inner());
       }
       return await def(res.inner());
     });
   }
 
   /**
-   * Maps a `ResultAsync<T, E>` to `ResultAsync<T, F>` by applying a function `f` to a contained `Err` value, leaving an `Ok` value untouched.
+   * Maps a `ResultAsync<T, E>` to `ResultAsync<T, F>` by applying a function `fn` to a contained `Err` value, leaving an `Ok` value untouched.
    *
-   * The applied function `f` may be synchronous or asynchronous.
+   * The applied function `fn` may be synchronous or asynchronous.
    *
    * This function can be used to pass through a successful result while handling an error.
    */
-  mapErr<F>(f: (err: E) => F | Promise<F>): ResultAsync<T, F> {
+  mapErr<F>(fn: (err: E) => F | Promise<F>): ResultAsync<T, F> {
     return new ResultAsync(
-      this.promise.then(async res => {
+      this.p.then(async res => {
         if (res.isOk()) {
           // @ts-expect-error - error type is irrelevant to Ok
           return res as Ok<T, F>;
         }
-        return new Err(await f(res.inner()));
+        return new Err(await fn(res.inner()));
       }),
     );
   }
 
   /**
-   * Calls a function `f` with the contained success value if `Ok`.
+   * Calls a function `fn` with the contained success value if `Ok`.
    *
-   * The function `f` may be synchronous or asynchronous.
+   * The function `fn` may be synchronous or asynchronous.
    *
    * Returns the original result.
    */
-  inspect(f: (ok: T) => void | Promise<void>): ResultAsync<T, E> {
+  inspect(fn: (ok: T) => void | Promise<void>): ResultAsync<T, E> {
+    if (typeof fn !== "function") {
+      // @ts-expect-error - this only happens when something like vitest
+      // tries to call .inspect() to represent the object in test output
+      return this.toString();
+    }
+
     return new ResultAsync(
-      this.promise.then(async res => {
+      this.p.then(async res => {
         if (res.isOk()) {
-          await f(res.inner());
+          await fn(res.inner());
         }
         return res;
       }),
@@ -153,17 +152,17 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   }
 
   /**
-   * Calls a function `f` with the contained error value if `Err`.
+   * Calls a function `fn` with the contained error value if `Err`.
    *
-   * The function `f` may be synchronous or asynchronous.
+   * The function `fn` may be synchronous or asynchronous.
    *
    * Returns the original result.
    */
-  inspectErr(f: (err: E) => void | Promise<void>): ResultAsync<T, E> {
+  inspectErr(fn: (err: E) => void | Promise<void>): ResultAsync<T, E> {
     return new ResultAsync(
-      this.promise.then(async res => {
+      this.p.then(async res => {
         if (res.isErr()) {
-          await f(res.inner());
+          await fn(res.inner());
         }
         return res;
       }),
@@ -176,7 +175,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * Throws an `ExpectationFailed` exception if the result is `Err`, using the custom message `msg`.
    */
   expect(msg: string): Promise<T> {
-    return this.promise.then(res => res.expect(msg));
+    return this.p.then(res => res.expect(msg));
   }
 
   /**
@@ -189,7 +188,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * If you expect the `ResultAsync` to be successful, prefer calling `expect` and specify the reason for your expectation.
    */
   unwrap(): Promise<T> {
-    return this.promise.then(res => {
+    return this.p.then(res => {
       if (res.isOk()) {
         return res.inner();
       }
@@ -205,7 +204,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * Throws an `ExpectationFailed` exception if the result is `Ok`, using the custom message `msg`.
    */
   expectErr(msg: string): Promise<E> {
-    return this.promise.then(res => res.expectErr(msg));
+    return this.p.then(res => res.expectErr(msg));
   }
 
   /**
@@ -218,7 +217,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * If you expect the `ResultAsync` to fail, prefer calling `expectErr` and specify the reason for your expectation.
    */
   unwrapErr(): Promise<E> {
-    return this.promise.then(res => {
+    return this.p.then(res => {
       if (res.isErr()) {
         return res.inner();
       }
@@ -236,7 +235,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * Unlike `unwrap`, this method is known to never panic, therefore it can be used instead of `unwrap` as a maintainability safeguard that will fail to compile if the error type of the result is later changed to an error that can actually occur.
    */
   intoOk(this: ResultAsync<T, never>): Promise<T> {
-    return this.promise.then(res => {
+    return this.p.then(res => {
       if (res.isOk()) {
         return res.inner();
       }
@@ -254,7 +253,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * Unlike `unwrapErr`, this method is known to never panic, therefore it can be used instead of `unwrapErr` as a maintainability safeguard that will fail to compile if the ok type of the result is later changed to a type that can actually occur.
    */
   intoErr(this: ResultAsync<never, E>): Promise<E> {
-    return this.promise.then(res => {
+    return this.p.then(res => {
       if (res.isErr()) {
         return res.inner();
       }
@@ -265,43 +264,43 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   }
 
   /**
-   * Returns the result of calling function `f` if the result is `Ok`, otherwise returns the original `Err` value.
+   * Returns the result of calling function `fn` if the result is `Ok`, otherwise returns the original `Err` value.
    *
-   * The applied function `f` may be synchronous or asynchronous.
+   * The applied function `fn` may be synchronous or asynchronous.
    *
    * This function can be used for control flow based on result values.
    */
   andThen<U, F = E>(
-    f: (ok: T) => Result<U, F> | ResultAsync<U, F>,
+    fn: (ok: T) => Result<U, F> | ResultAsync<U, F>,
   ): ResultAsync<U, E | F> {
     return new ResultAsync(
-      this.promise.then(async res => {
+      this.p.then(async res => {
         if (res.isErr()) {
           // @ts-expect-error - okay type is irrelevant to Err
           return res as Err<U, E>;
         }
-        return await f(res.inner());
+        return await fn(res.inner());
       }),
     );
   }
 
   /**
-   * Returns the result of calling function `f` if the result is `Err`, otherwise returns the original `Ok` value.
+   * Returns the result of calling function `fn` if the result is `Err`, otherwise returns the original `Ok` value.
    *
-   * The applied function `f` may be synchronous or asynchronous.
+   * The applied function `fn` may be synchronous or asynchronous.
    *
    * This function can be used for control flow based on result values.
    */
   orElse<F, U = T>(
-    f: (err: E) => Result<U, F> | ResultAsync<U, F>,
+    fn: (err: E) => Result<U, F> | ResultAsync<U, F>,
   ): ResultAsync<T | U, F> {
     return new ResultAsync(
-      this.promise.then(async res => {
+      this.p.then(async res => {
         if (res.isOk()) {
           // @ts-expect-error - error type is irrelevant to Ok
           return res as Ok<T, F>;
         }
-        return await f(res.inner());
+        return await fn(res.inner());
       }),
     );
   }
@@ -312,20 +311,20 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    * Arguments passed to `unwrapOr` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `unwrapOrElse`, which is lazily evaluated.
    */
   unwrapOr(def: T): Promise<T> {
-    return this.promise.then(res => res.unwrapOr(def));
+    return this.p.then(res => res.unwrapOr(def));
   }
 
   /**
-   * Returns a promise resolving to the contained `Ok` value or computes it from function `f` if `Err`.
+   * Returns a promise resolving to the contained `Ok` value or computes it from function `fn` if `Err`.
    *
-   * The function `f` may be synchronous or asynchronous.
+   * The function `fn` may be synchronous or asynchronous.
    */
-  async unwrapOrElse(f: (err: E) => T | Promise<T>): Promise<T> {
+  async unwrapOrElse(fn: (err: E) => T | Promise<T>): Promise<T> {
     const res = await this;
     if (res.isOk()) {
       return res.inner();
     }
-    return await f(res.inner());
+    return await fn(res.inner());
   }
 
   /**
@@ -362,12 +361,42 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
   }
 
   /**
+   * Returns the result of calling asynchronous function `fn` with the inner result.
+   *
+   * This function can be useful for entering procedural-style code blocks when `ResultAsync`'s functional-style methods are awkward for your use case.
+   *
+   * @example
+   * ```
+   * import crab, { ResultAsync } from "crabuccino";
+   *
+   * const res: ResultAsync<string, Error> = crab.ErrAsync(new Error("operation failed"));
+   *
+   * const next = res.thenDo(async res => {
+   *   if (res.isErr()) {
+   *     console.error("Oops!", res.inner());
+   *     const cleanupRes = await cleanup(res.inner());
+   *     if (cleanup.isErr()) {
+   *       crab.panic("We're in real bad trouble...");
+   *     }
+   *     return cleanupRes;
+   *   }
+   *   return res;
+   * });
+   * ```
+   */
+  thenDo(
+    fn: (res: Result<T, E>) => Promise<Result<T, E>> | ResultAsync<T, E>,
+  ): ResultAsync<T, E> {
+    return new ResultAsync(this.p.then(async res => await fn(res)));
+  }
+
+  /**
    * Transposes a `ResultAsync` of an `Option` into a promise resolving to an `Option` of a `Result`.
    *
    * `Ok(None)` will be mapped to `None`. `Ok(Some(_))` and `Err(_)` will be mapped to `Some(Ok(_))` and `Some(Err(_))`.
    */
   transpose<T>(this: ResultAsync<Option<T>, E>): Promise<Option<Result<T, E>>> {
-    return this.promise.then(res => res.transpose());
+    return this.p.then(res => res.transpose());
   }
 
   /**
@@ -375,7 +404,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    */
   flatten<T>(this: ResultAsync<ResultAsync<T, E>, E>): ResultAsync<T, E> {
     return new ResultAsync(
-      this.promise.then(async res => {
+      this.p.then(async res => {
         if (res.isOk()) {
           return await res.inner();
         } else {

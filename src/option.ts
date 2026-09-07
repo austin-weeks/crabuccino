@@ -2,17 +2,6 @@ import { Err, Ok, type Result } from "./result";
 import { ExpectationFailed, Panic } from "./panic";
 import { stringify } from "./stringify";
 
-// Node/Vitest will try to call '.inspect()' - override it
-export const inspectSymbol = Symbol.for("nodejs.util.inspect.custom");
-
-// Docs are in index.ts on the crab export.
-export function fromNullish<T>(v: T | null | undefined): Option<NonNullable<T>> {
-  if (v === null || v === undefined) {
-    return new None();
-  }
-  return new Some(v);
-}
-
 /**
  * Represents an optional value that is either `Some(T)` or `None`.
  */
@@ -116,33 +105,33 @@ interface OptionMethods<T> {
   unwrapOr(def: T): T;
 
   /**
-   * Returns the contained `Some` value or computes it from function `f` if `None`.
+   * Returns the contained `Some` value or computes it from function `fn` if `None`.
    */
-  unwrapOrElse(f: () => T): T;
+  unwrapOrElse(fn: () => T): T;
 
   /**
-   * Maps an `Option<T>` to `Option<U>` by applying a function `f` to a contained value (if `Some`) or returns `None` (if `None`).
+   * Maps an `Option<T>` to `Option<U>` by applying a function `fn` to a contained value (if `Some`) or returns `None` (if `None`).
    */
-  map<U>(f: (some: T) => U): Option<U>;
+  map<U>(fn: (some: T) => U): Option<U>;
 
   /**
-   * Calls a function `f` with the contained value if `Some`.
+   * Calls a function `fn` with the contained value if `Some`.
    *
    * Returns the original option.
    */
-  inspect(f: (some: T) => void): Option<T>;
+  inspect(fn: (some: T) => void): Option<T>;
 
   /**
-   * Returns the provided default result `def` (if `None`), or applies a function `f` to the contained value (if `Some`).
+   * Returns the provided default result `def` (if `None`), or applies a function `fn` to the contained value (if `Some`).
    *
    * Arguments passed to `mapOr` are eagerly evaluated; if you are passing the result of a function call, it is recommended to use `mapOrElse`, which is lazily evaluated.
    */
-  mapOr<U>(def: U, f: (some: T) => U): U;
+  mapOr<U>(def: U, fn: (some: T) => U): U;
 
   /**
-   * Computes a default function result `def` (if `None`), or applies a different function `f` to the contained value (if `Some`).
+   * Computes a default function result `def` (if `None`), or applies a different function `fn` to the contained value (if `Some`).
    */
-  mapOrElse<U>(def: () => U, f: (some: T) => U): U;
+  mapOrElse<U>(def: () => U, fn: (some: T) => U): U;
 
   /**
    * Transforms the `Option<T>` into a `Result<T, E>`, mapping `Some(v)` to `Ok(v)` and `None` to `Err(err)`.
@@ -164,9 +153,9 @@ interface OptionMethods<T> {
   and<U>(optb: Option<U>): Option<U>;
 
   /**
-   * Returns `None` if the option is `None`, otherwise calls `f` with the wrapped value and returns the result.
+   * Returns `None` if the option is `None`, otherwise calls `fn` with the wrapped value and returns the result.
    */
-  andThen<U>(f: (some: T) => Option<U>): Option<U>;
+  andThen<U>(fn: (some: T) => Option<U>): Option<U>;
 
   /**
    * Returns `None` if the option is `None`, otherwise calls `predicate` with the wrapped value and returns:
@@ -183,9 +172,9 @@ interface OptionMethods<T> {
   or(optb: Option<T>): Option<T>;
 
   /**
-   * Returns the option if `Some`, otherwise calls `f` and returns the result.
+   * Returns the option if `Some`, otherwise calls `fn` and returns the result.
    */
-  orElse(f: () => Option<T>): Option<T>;
+  orElse(fn: () => Option<T>): Option<T>;
 
   /**
    * Returns `Some` if exactly one of `this`, `optb` is `Some`, otherwise returns `None`.
@@ -224,19 +213,15 @@ interface OptionMethods<T> {
  */
 export class Some<T> implements OptionMethods<T> {
   /** Creates a `Some(T)` variant of `Option<T>`. */
-  constructor(private readonly value: T) {}
+  constructor(private readonly v: T) {}
   toString(): string {
-    return `Some(${stringify(this.value)})`;
+    return `Some(${stringify(this.v)})`;
   }
   toJSON() {
     return {
       OptionVariant: "Some",
-      inner: this.value,
+      inner: this.v,
     };
-  }
-  // Node/Vitest will try to call '.inspect()' - override it
-  [inspectSymbol]() {
-    return this.toString();
   }
 
   /**
@@ -250,71 +235,76 @@ export class Some<T> implements OptionMethods<T> {
    * ```
    */
   inner(): T {
-    return this.value;
+    return this.v;
   }
   toNullish(): T {
-    return this.value;
+    return this.v;
   }
   match<A, B = A>(some: (val: T) => A, _none: () => B): A | B {
-    return some(this.value);
+    return some(this.v);
   }
 
   isSome(): this is Some<T> {
     return true;
   }
   isSomeAnd(predicate: (some: T) => boolean): boolean {
-    return predicate(this.value);
+    return predicate(this.v);
   }
   isNone(): this is None<T> {
     return false;
   }
   isNoneOr(predicate: (some: T) => boolean): boolean {
-    return predicate(this.value);
+    return predicate(this.v);
   }
   expect(_msg: string): T {
-    return this.value;
+    return this.v;
   }
   unwrap(): T {
-    return this.value;
+    return this.v;
   }
   unwrapOr(_def: T): T {
-    return this.value;
+    return this.v;
   }
-  unwrapOrElse(_f: () => T): T {
-    return this.value;
+  unwrapOrElse(_fn: () => T): T {
+    return this.v;
   }
-  map<U>(f: (some: T) => U): Some<U> {
-    return new Some(f(this.value));
+  map<U>(fn: (some: T) => U): Some<U> {
+    return new Some(fn(this.v));
   }
-  inspect(f: (some: T) => void): Some<T> {
-    f(this.value);
+  inspect(fn: (some: T) => void): Some<T> {
+    if (typeof fn !== "function") {
+      // @ts-expect-error - Vitest tries to call .inspect() to represent the object in test output.
+      // It won't pass a function so this is how we detect it. Just return the string representation...
+      return this.toString();
+    }
+    fn(this.v);
     return this;
   }
-  mapOr<U>(_def: U, f: (some: T) => U): U {
-    return f(this.value);
+  mapOr<U>(_def: U, fn: (some: T) => U): U {
+    return fn(this.v);
   }
-  mapOrElse<U>(_def: () => U, f: (some: T) => U): U {
-    return f(this.value);
+  mapOrElse<U>(_def: () => U, fn: (some: T) => U): U {
+    return fn(this.v);
   }
   okOr<E>(_err: E): Ok<T, E> {
-    return new Ok(this.value);
+    return new Ok(this.v);
   }
   okOrElse<E>(_err: () => E): Ok<T, E> {
-    return new Ok(this.value);
+    return new Ok(this.v);
   }
   and<U>(optb: Option<U>): Option<U> {
     return optb;
   }
-  andThen<U>(f: (some: T) => Option<U>): Option<U> {
-    return f(this.value);
+  andThen<U>(fn: (some: T) => Option<U>): Option<U> {
+    return fn(this.v);
   }
   filter(predicate: (some: T) => boolean): Option<T> {
-    return predicate(this.value) ? this : new None();
+    return predicate(this.v) ? this : new None();
   }
   or(_optb: Option<T>): Some<T> {
     return this;
   }
-  orElse(_f: () => Option<T>): Some<T> {
+  orElse(_fn: () => Option<T>): Some<T> {
     return this;
   }
   xor(optb: Option<T>): Option<T> {
@@ -325,21 +315,21 @@ export class Some<T> implements OptionMethods<T> {
   }
   zip<U>(other: Option<U>): Option<[T, U]> {
     if (other.isSome()) {
-      return new Some<[T, U]>([this.value, other.value]);
+      return new Some<[T, U]>([this.v, other.v]);
     }
     return new None();
   }
   unzip<A, B = A>(this: Some<[A, B]>): [Some<A>, Some<B>] {
-    return [new Some(this.value[0]), new Some(this.value[1])];
+    return [new Some(this.v[0]), new Some(this.v[1])];
   }
   transpose<T, E>(this: Some<Result<T, E>>): Result<Some<T>, E> {
-    if (this.value.isOk()) {
-      return new Ok(new Some(this.value.inner()));
+    if (this.v.isOk()) {
+      return new Ok(new Some(this.v.inner()));
     }
-    return this.value as Err<Some<T>, E>;
+    return this.v as Err<Some<T>, E>;
   }
   flatten<T>(this: Some<Option<T>>): Option<T> {
-    return this.value;
+    return this.v;
   }
 }
 
@@ -359,10 +349,6 @@ export class None<T> implements OptionMethods<T> {
     return {
       OptionVariant: "None",
     };
-  }
-  // Node/Vitest will try to call '.inspect()' - override it
-  [inspectSymbol]() {
-    return this.toString();
   }
 
   toNullish(): undefined {}
@@ -391,20 +377,25 @@ export class None<T> implements OptionMethods<T> {
   unwrapOr(def: T): T {
     return def;
   }
-  unwrapOrElse(f: () => T): T {
-    return f();
+  unwrapOrElse(fn: () => T): T {
+    return fn();
   }
-  map<U>(_f: (some: T) => U): Option<U> {
+  map<U>(_fn: (some: T) => U): Option<U> {
     // @ts-expect-error - type T is irrelevant for None
     return this as Option<U>;
   }
-  inspect(_f: (some: T) => void): None<T> {
+  inspect(_fn: (some: T) => void): None<T> {
+    if (typeof _fn !== "function") {
+      // @ts-expect-error - Vitest tries to call .inspect() to represent the object in test output.
+      // It won't pass a function so this is how we detect it. Just return the string representation...
+      return this.toString();
+    }
     return this;
   }
-  mapOr<U>(def: U, _f: (some: T) => U): U {
+  mapOr<U>(def: U, _fn: (some: T) => U): U {
     return def;
   }
-  mapOrElse<U>(def: () => U, _f: (some: T) => U): U {
+  mapOrElse<U>(def: () => U, _fn: (some: T) => U): U {
     return def();
   }
   okOr<E>(err: E): Err<T, E> {
@@ -417,7 +408,7 @@ export class None<T> implements OptionMethods<T> {
     // @ts-expect-error - type T is irrelevant for None
     return this as None<U>;
   }
-  andThen<U>(_f: (some: T) => Option<U>): None<U> {
+  andThen<U>(_fn: (some: T) => Option<U>): None<U> {
     // @ts-expect-error - type T is irrelevant for None
     return this as None<U>;
   }
@@ -427,8 +418,8 @@ export class None<T> implements OptionMethods<T> {
   or(optb: Option<T>): Option<T> {
     return optb;
   }
-  orElse(f: () => Option<T>): Option<T> {
-    return f();
+  orElse(fn: () => Option<T>): Option<T> {
+    return fn();
   }
   xor(optb: Option<T>): Option<T> {
     return optb;
@@ -445,22 +436,4 @@ export class None<T> implements OptionMethods<T> {
   flatten<T>(this: None<Option<T>>): None<T> {
     return this as None<T>;
   }
-}
-
-/**
- * Construct a `Some(T)` variant of `Option<T>` containing a value of type `T`.
- *
- * Equivalent to `new Some(val)`.
- */
-export function some<T>(val: T): Option<T> {
-  return new Some(val);
-}
-
-/**
- * Construct a `None` variant of `Option<T>` containing no value.
- *
- * Equivalent to `new None()`.
- */
-export function none<T>(): Option<T> {
-  return new None();
 }

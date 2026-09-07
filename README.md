@@ -1,7 +1,11 @@
 # 🦀 Crabuccino
 
 <picture>
-    <img src="./.github/assets/coffee-ferris.png" alt="Ferris the rustacean drinking a capuccino from their JavaScript mug." title="Art by @cerberussaturn07">
+  <img
+    src="https://raw.githubusercontent.com/austin-weeks/crabuccino/main/.github/assets/coffee-ferris.png"
+    alt="Ferris the rustacean drinking a capuccino from their JavaScript mug."
+    title="Art by @cerberussaturn07"
+  >
 </picture>
 
 A faithful TypeScript port of Rust's `Result<T, E>` and `Option<T>` types, plus `ResultAsync<T, E>` for representing asynchronous operations that may fail.

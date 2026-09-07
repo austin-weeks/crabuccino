@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Ok, Err, type Result } from "../src/result";
-import { inspectSymbol, None, Some, type Option } from "../src/option";
+import { None, Some, type Option } from "../src/option";
 import { ExpectationFailed, Panic } from "../src/panic";
 import { captureThrown } from "./utils";
 
@@ -129,6 +129,12 @@ describe("Result", () => {
         const inspect = vi.fn();
         new Ok("okay").inspect(inspect);
         expect(inspect).toHaveBeenCalledWith("okay");
+      });
+
+      it("should return a string representation of Ok if passed a non-function", () => {
+        const ok = new Ok("okay");
+        // @ts-expect-error - have to test the non-function case
+        expect(ok.inspect()).toEqual(ok.toString());
       });
     });
 
@@ -311,13 +317,6 @@ describe("Result", () => {
         });
       });
     });
-
-    describe("inspect symbol", () => {
-      it("should delegate to toString", () => {
-        const ok = new Ok("okay");
-        expect(ok[inspectSymbol]()).toEqual(ok.toString());
-      });
-    });
   });
 
   describe("Err", () => {
@@ -449,6 +448,12 @@ describe("Result", () => {
         const inspector = vi.fn();
         new Err("error").inspect(inspector);
         expect(inspector).not.toHaveBeenCalled();
+      });
+
+      it("should return a string representation of Err if passed a non-function", () => {
+        const err = new Err("oops");
+        // @ts-expect-error - have to test the non-function case
+        expect(err.inspect()).toEqual(err.toString());
       });
     });
 
@@ -622,13 +627,6 @@ describe("Result", () => {
           ResultVariant: "Err",
           inner: "error",
         });
-      });
-    });
-
-    describe("inspect symbol", () => {
-      it("should delegate to toString", () => {
-        const err = new Err("error");
-        expect(err[inspectSymbol]()).toEqual(err.toString());
       });
     });
   });

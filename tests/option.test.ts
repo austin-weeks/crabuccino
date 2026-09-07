@@ -1,13 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  None,
-  Some,
-  Option,
-  fromNullish,
-  some,
-  none,
-  inspectSymbol,
-} from "../src/option";
+import { None, Some, Option } from "../src/option";
 import { Err, Ok, Result } from "../src/result";
 import { ExpectationFailed, Panic } from "../src/panic";
 import { captureThrown } from "./utils";
@@ -15,35 +7,6 @@ import { captureThrown } from "./utils";
 // TODO: add typing tests
 
 describe("Option", () => {
-  describe("top-level functions", () => {
-    describe("fromNullish", () => {
-      it("should return None when given null", () => {
-        expect(fromNullish(null)).toBeInstanceOf(None);
-      });
-      it("should return None when given undefined", () => {
-        expect(fromNullish(undefined)).toBeInstanceOf(None);
-      });
-      it("should return Some(T) when given a non-nullish value", () => {
-        const some = fromNullish("value");
-        expect(some).toBeInstanceOf(Some);
-        expect(some.unwrap()).toEqual("value");
-      });
-    });
-
-    describe("some", () => {
-      it("should construct a Some(T)", () => {
-        const v = some("value");
-        expect(v).toBeInstanceOf(Some);
-        expect(v.unwrap()).toEqual("value");
-      });
-    });
-    describe("none", () => {
-      it("should construct a None", () => {
-        expect(none()).toBeInstanceOf(None);
-      });
-    });
-  });
-
   describe("Some", () => {
     describe("toNullish", () => {
       it("should return the value", () => {
@@ -169,6 +132,11 @@ describe("Option", () => {
       it("should return self", () => {
         const some = new Some("val");
         expect(some.inspect(() => {})).toBe(some);
+      });
+      it("should return a string representation of Some if passed a non-function", () => {
+        const some = new Some("val");
+        // @ts-expect-error - have to test the non-function case
+        expect(some.inspect()).toEqual(some.toString());
       });
     });
 
@@ -324,13 +292,6 @@ describe("Option", () => {
         });
       });
     });
-
-    describe("inspect symbol", () => {
-      it("should delegate to toString", () => {
-        const some = new Some("value");
-        expect(some[inspectSymbol]()).toEqual(some.toString());
-      });
-    });
   });
 
   describe("None", () => {
@@ -441,6 +402,11 @@ describe("Option", () => {
         const f = vi.fn();
         new None().inspect(f);
         expect(f).not.toHaveBeenCalled();
+      });
+      it("should return a string representation of None if passed a non-function", () => {
+        const none = new None();
+        // @ts-expect-error - have to test the non-function case
+        expect(none.inspect()).toEqual(none.toString());
       });
     });
 
@@ -579,13 +545,6 @@ describe("Option", () => {
         expect(new None().toJSON()).toEqual({
           OptionVariant: "None",
         });
-      });
-    });
-
-    describe("inspect symbol", () => {
-      it("should delegate to toString", () => {
-        const none = new None();
-        expect(none[inspectSymbol]()).toEqual(none.toString());
       });
     });
   });
