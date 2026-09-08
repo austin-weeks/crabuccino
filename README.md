@@ -1,7 +1,7 @@
-# Crabuccino 🦀☕️
+# Crabuccino
 
 [![Package Version](https://img.shields.io/npm/v/crabuccino?logo=npm)](https://www.npmjs.org/package/crabuccino)
-![GitHub License](https://img.shields.io/github/license/austin-weeks/crabuccino)
+[![Minified Size](https://img.shields.io/bundlejs/size/crabuccino)](https://www.npmjs.org/package/crabuccino)
 ![Package Downloads](https://img.shields.io/npm/dm/crabuccino)
 [![Code Coverage](https://img.shields.io/badge/coverage-100%25-dark_green)](https://github.com/austin-weeks/crabuccino/tree/main/tests)
 
@@ -13,7 +13,7 @@
   >
 </picture>
 
-A faithful TypeScript port of Rust's `Result<T, E>` and `Option<T>` types, plus `ResultAsync<T, E>` for representing asynchronous operations that may fail.
+A faithful, lightweight TypeScript port of Rust's `Result<T, E>` and `Option<T>` types, plus `ResultAsync<T, E>` for representing asynchronous operations that may fail.
 
 `ResultAsync` is like a `Promise<Result<T, E>>`, but with `Result`-style combinators for async workflows.
 
@@ -97,7 +97,7 @@ res.match(
 
 ### Type Narrowing
 
-Since JavaScript doesn't have pattern matching like `if let Some(val) = result`, we use type-guard methods that allow TypeScript to narrow the type of the underlying variant and allow type-safe access to the contained values.
+Since JavaScript doesn't have pattern matching like `if let Ok(val) = result {}`, we use type-guard methods that allow TypeScript to narrow the type of the underlying variant and allow type-safe access to contained values.
 
 ```typescript
 import crab, { type Result, type Option } from "crabuccino";
@@ -141,7 +141,7 @@ You can also await `ResultAsync` in bulk similar to `Promise.all`/`Promise.allSe
 ```typescript
 import crab, { type Result, type ResultAsync } from "crabuccino";
 
-const pendingCalculations: ResultAsync<number, Error> = [/* ... */];
+const pendingCalculations: ResultAsync<number, Error>[] = [/* ... */];
 
 const calcsOrErr: Result<number[], Error> = await crab.all(pendingCalculations);
 
