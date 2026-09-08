@@ -1,6 +1,6 @@
 {
   "name": "crabuccino",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Idiomatic port of Rust's Result and Option types.",
   "author": {
     "name": "Austin Weeks",
@@ -26,6 +26,7 @@
     ".": "./dist/index.mjs",
     "./package.json": "./package.json"
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],

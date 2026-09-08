@@ -5,15 +5,19 @@ export default defineConfig({
     profile: "esm-only",
   },
   banner: {
-    dts: `// crabuccino
-//
-// Distributed under the MPL-2.0 License
-// ${new Date().toISOString()}
+    dts: `/*
+ * Crabuccino
+ *
+ * Distributed under the MPL-2.0 License
+ * ${new Date().toISOString()}
+ */
 `,
-    js: `// crabuccino
-//
-// Distributed under the MPL-2.0 License
-// ${new Date().toISOString()}
+    js: `/*
+ * Crabuccino
+ *
+ * Distributed under the MPL-2.0 License
+ * ${new Date().toISOString()}
+ */
 `,
   },
   minify: true,
