@@ -4,8 +4,6 @@ export { ResultAsync } from "./result-async";
 
 import { crab } from "./crab";
 
-// TODO: make all methods arrow functions to reduce token count.
-
 /**
  * Utility functions for creating type variants and performing operations safely.
  *
