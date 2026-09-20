@@ -367,7 +367,7 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
    *
    * @example
    * ```
-   * import crab, { ResultAsync } from "crabuccino";
+   * import { crab, ResultAsync } from "crabuccino";
    *
    * const res: ResultAsync<string, Error> = crab.ErrAsync(new Error("operation failed"));
    *
