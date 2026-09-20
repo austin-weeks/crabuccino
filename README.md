@@ -34,7 +34,7 @@ bun add crabuccino
 Use the library's default `crab` export to create variants of `Result`, `Option`, and `ResultAsync`. Then, use the methods available on each type just like you would in Rust!
 
 ```typescript
-import crab, { type Result, type Option, type ResultAsync } from "crabuccino";
+import { crab, type Result, type Option, type ResultAsync } from "crabuccino";
 
 const res: Result<number, Error> = crab.Ok(5);
 
@@ -57,7 +57,7 @@ const err = await pendingRes.expectErr("should be an error");
 You can use `crab` to interface with throwing functions.
 
 ```typescript
-import crab, { type Result } from "crabuccino";
+import { crab, type Result } from "crabuccino";
 
 const res: Result<number, Error> = crab.try(
   () => parseInt("8"),
@@ -79,7 +79,7 @@ console.assert(res.unwrap() === { foo: "bar" });
 You can also match on variants!
 
 ```typescript
-import crab, { type Option, type Result } from "crabuccino";
+import { crab, type Option, type Result } from "crabuccino";
 
 const opt: Option<string> = crab.Some("Ferris");
 
@@ -100,7 +100,7 @@ res.match(
 Since JavaScript doesn't have pattern matching like `if let Ok(val) = result {}`, we use type-guard methods that allow TypeScript to narrow the type of the underlying variant and allow type-safe access to contained values.
 
 ```typescript
-import crab, { type Result, type Option } from "crabuccino";
+import { crab, type Result, type Option } from "crabuccino";
 
 const opt: Option<string> = crab.Some("some");
 if (opt.isSome()) {
@@ -121,7 +121,7 @@ if (res.isErr()) {
 Crabuccino provides the `ResultAsync` type which acts like a promise of a `Result`. It exposes the same methods as a standard `Result`!
 
 ```typescript
-import crab, { type ResultAsync } from "crabuccino";
+import { crab, type ResultAsync } from "crabuccino";
 
 function fetchUser(id: string): ResultAsync<User, Error> {
   return crab.tryAsync(
@@ -139,7 +139,7 @@ console.assert(userName === "Willie");
 You can also await `ResultAsync` in bulk similar to `Promise.all`/`Promise.allSettled`.
 
 ```typescript
-import crab, { type Result, type ResultAsync } from "crabuccino";
+import { crab, type Result, type ResultAsync } from "crabuccino";
 
 const pendingCalculations: ResultAsync<number, Error>[] = [/* ... */];
 

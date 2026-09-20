@@ -1,5 +1,5 @@
-import crab, { Err, None, Ok, Option, Result, ResultAsync, Some } from "../src/index";
-import { crab as ogCrab } from "../src/crab";
+import def, { Err, None, Ok, Option, Result, ResultAsync, Some } from "../src/index";
+import { crab } from "../src/crab";
 import { describe, expect, it } from "vitest";
 
 describe("index", () => {
@@ -21,6 +21,9 @@ describe("index", () => {
     void opt;
   });
   it("should export the crab utility object", () => {
-    expect(crab).toStrictEqual(ogCrab);
+    expect(crab).toHaveProperty("Ok");
+  });
+  it("should export the crab utility object as default", () => {
+    expect(def).toBe(crab);
   });
 });
