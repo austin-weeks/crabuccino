@@ -2,6 +2,7 @@ import { None, Some, type Option } from "./option";
 import { panic } from "./panic";
 import { Err, Ok, type Result } from "./result";
 import { ResultAsync } from "./result-async";
+import { stringify } from "./stringify";
 import { _try, all, allSettled, combine, tryAsync } from "./utilities";
 
 /**
@@ -134,10 +135,10 @@ export const crab = {
    */
   makeSafe:
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <T, E, F extends (...args: any[]) => T>(
-        fn: F,
+    <T, E, A extends any[]>(
+        fn: (...args: A) => T,
         errMapper: (e: unknown) => E,
-      ): ((...args: Parameters<F>) => Result<T, E>) =>
+      ): ((...args: A) => Result<T, E>) =>
       (...args) =>
         _try(() => fn(...args), errMapper),
 
@@ -166,12 +167,31 @@ export const crab = {
    */
   makeSafeAsync:
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <T, E, F extends (...args: any[]) => Promise<T>>(
-        fn: F,
+    <T, E, A extends any[]>(
+        fn: (...args: A) => Promise<T>,
         errMapper: (e: unknown) => E | Promise<E>,
-      ): ((...args: Parameters<F>) => ResultAsync<T, E>) =>
+      ): ((...args: A) => ResultAsync<T, E>) =>
       (...args) =>
         tryAsync(() => fn(...args), errMapper),
+
+  /**
+   * Convert a value `e` of type `unknown` to an `Error`. Returns the value unchanged if already an `Error` instance, otherwise returns a new `Error` instance wrapping the value.
+   *
+   * This function is useful as the `errMapper` arguments to {@link crab.try}, {@link crab.tryAsync}, {@link crab.makeSafe}, and {@link crab.makeSafeAsync}.
+   *
+   * @example
+   * ```
+   * import { crab, type Result } from "crabuccino";
+   *
+   * const res: Result<number, Error> = crab.try(() => 2, crab.unknownToError);
+   * ```
+   */
+  unknownToError: (e: unknown) => {
+    if (e instanceof Error) {
+      return e;
+    }
+    return new Error(stringify(e, false), { cause: e });
+  },
 
   /**
    * Given an array of `Result<T, E>`, returns a `Result<T[], E>`, where an `Ok` value contains the accumulated `Ok` results, and an `Err` value contains the first encountered `Err` result.

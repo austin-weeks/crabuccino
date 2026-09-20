@@ -220,6 +220,19 @@ describe("crab", () => {
     );
   });
 
+  describe("unknownToError", () => {
+    it("should return Error instances unchanged", () => {
+      const err = new Error("oops");
+      expect(crab.unknownToError(err)).toBe(err);
+    });
+    it("should return non-Error values as a new Error", () => {
+      const err = crab.unknownToError("not an error");
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toEqual("not an error");
+      expect(err.cause).toEqual("not an error");
+    });
+  });
+
   describe("shortCircuit", () => {
     it("should return Ok(T[]) if all results are successful", () => {
       const a = new Ok("a");
