@@ -205,7 +205,7 @@ export const crab = {
   /**
    * The typesafe version of `Promise.all`.
    *
-   * Given an array of `ResultAsync<T, E>`, returns a promise resolving to `Result<T[], E>`, where an `Ok` value contains the accumulated `Ok` results, and an `Err` value contains the first encountered `Err` result.
+   * Given an array of `ResultAsync<T, E>`, returns a `ResultAsync<T[], E>`, where an `Ok` value contains the accumulated `Ok` results, and an `Err` value contains the first encountered `Err` result.
    *
    * Similar to `Promise.all`, this short circuits, meaning only the _first_ resolved `Err` value is returned.
    *
