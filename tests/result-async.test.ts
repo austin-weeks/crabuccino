@@ -27,6 +27,21 @@ describe("ResultAsync", () => {
     });
   });
 
+  describe("fromSafe", () => {
+    it("should return an AsyncResult resolving to the the result of the provided function", async () => {
+      const res = new Ok("okay");
+      expect(await ResultAsync.fromSafe(async () => res)).toBe(res);
+    });
+    it("should throw if the provided function throws", () => {
+      expect(
+        async () =>
+          await ResultAsync.fromSafe(async () => {
+            throw new Error("oops");
+          }),
+      ).rejects.toThrow();
+    });
+  });
+
   describe("ok", () => {
     it("should resolve with Some(T) if the pending result is Ok", async () => {
       const opt = await asyncOk("value").ok();

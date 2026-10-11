@@ -11,8 +11,12 @@ import { stringify } from "./stringify";
  * `ResultAsync` exposes most of the methods of `Result` and can be used to chain asynchronous operations.
  */
 export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
-  /** Creates a `ResultAsync<T, E>` from a `Promise` resolving to `Result<T, E>`. */
-  constructor(readonly p: Promise<Result<T, E>>) {}
+  /**
+   * Creates a `ResultAsync<T, E>` from a `Promise` resolving to `Result<T, E>`.
+   *
+   * **Prefer using safe factory functions on the `crab` export.**
+   */
+  constructor(private readonly p: Promise<Result<T, E>>) {}
   toString(): string {
     return "ResultAsync";
   }
@@ -24,6 +28,15 @@ export class ResultAsync<T, E> implements PromiseLike<Result<T, E>> {
       ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null | undefined,
   ): PromiseLike<TResult1 | TResult2> {
     return this.p.then(onfulfilled, onrejected);
+  }
+
+  /**
+   * Create a `ResultAsync<T, E>` from an async function that is known not to throw.
+   *
+   * **Any errors thrown by `fn` will _not_ be caught.**
+   */
+  static fromSafe<T, E>(fn: () => Promise<Result<T, E>>): ResultAsync<T, E> {
+    return new ResultAsync(fn());
   }
 
   // ---------- Instance Methods ----------
